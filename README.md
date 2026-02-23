@@ -21,7 +21,7 @@ A Flutter application for managing smart electrical boxes with usage tracking an
 
 ## Screenshots
 
-[Add screenshots of your app here]
+
 
 ## Technologies Used
 
