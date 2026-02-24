@@ -43,12 +43,40 @@ class AuthWrapper extends StatelessWidget {
           );
         }
 
-        // User is signed in
-        if (snapshot.hasData && snapshot.data != null) {
-          return const DashboardScreen();
+        // Handle errors in the auth stream
+        if (snapshot.hasError) {
+          return Scaffold(
+            backgroundColor: AppTheme.backgroundDark,
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, color: AppTheme.error, size: 64),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Authentication Error',
+                    style: AppTheme.headingMedium.copyWith(
+                      color: AppTheme.error,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text('Please restart the app', style: AppTheme.bodyMedium),
+                ],
+              ),
+            ),
+          );
         }
 
-        // User is not signed in
+        // User is signed in and verified
+        if (snapshot.hasData && snapshot.data != null) {
+          final user = snapshot.data!;
+          // Additional check to ensure user is valid
+          if (user.uid.isNotEmpty) {
+            return const DashboardScreen();
+          }
+        }
+
+        // User is not signed in or user data is invalid
         return const LoginScreen();
       },
     );

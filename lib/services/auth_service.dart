@@ -102,32 +102,28 @@ class AuthService {
 
   Future<void> signOut() async {
     try {
-      // Get the current user to check how they signed in
-      final user = _auth.currentUser;
-      bool wasGoogleUser = false;
-
-      // Check if this was a Google Sign-In user by looking at provider data
-      if (user != null) {
-        for (final providerProfile in user.providerData) {
-          if (providerProfile.providerId == 'google.com') {
-            wasGoogleUser = true;
-            break;
-          }
-        }
-      }
-
-      // Always sign out from Firebase Auth first
-      await _auth.signOut();
-
-      // Only attempt Google Sign-In logout if the user actually used Google Sign-In
-      if (wasGoogleUser) {
-        try {
+      // Sign out from Google Sign-In first (if user signed in with Google)
+      try {
+        final GoogleSignInAccount? currentGoogleUser =
+            _googleSignIn.currentUser;
+        if (currentGoogleUser != null) {
           await _googleSignIn.signOut();
           await _googleSignIn.disconnect();
-        } catch (e) {
-          // Silently handle Google Sign-In errors since Firebase logout succeeded
-          print('Google Sign-In logout error (safe to ignore): $e');
         }
+      } catch (e) {
+        // Ignore Google Sign-In errors, continue with Firebase logout
+        print('Google Sign-In logout warning (continuing): $e');
+      }
+
+      // Then sign out from Firebase Auth
+      await _auth.signOut();
+
+      // Wait a moment to ensure the auth state change propagates
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      // Verify that the user is actually signed out
+      if (_auth.currentUser != null) {
+        throw Exception('Sign out verification failed');
       }
     } catch (e) {
       throw Exception('Failed to sign out: $e');
