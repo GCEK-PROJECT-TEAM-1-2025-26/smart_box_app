@@ -23,7 +23,6 @@ A Flutter application for managing smart electrical boxes with usage tracking an
 
 ## Screenshots
 
-
 ## Technologies Used
 
 - **Flutter** - Cross-platform mobile development
