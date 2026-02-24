@@ -5,11 +5,13 @@ A Flutter application for managing smart electrical boxes with usage tracking an
 ## Features
 
 - **User Authentication**
+
   - Email/Password sign-in and sign-up
   - Google Sign-In integration
   - Secure Firebase Authentication
 
 - **Dashboard**
+
   - Real-time usage tracking for 3-pin plugs and EV chargers
   - Total amount calculation
   - Professional dark theme UI
@@ -20,8 +22,6 @@ A Flutter application for managing smart electrical boxes with usage tracking an
   - Usage monitoring
 
 ## Screenshots
-
-[Add screenshots of your app here]
 
 ## Technologies Used
 
