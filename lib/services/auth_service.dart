@@ -1,18 +1,25 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/services.dart';
+import 'user_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    // Force account picker every time
+    forceCodeForRefreshToken: true,
+  );
+  final UserService _userService = UserService();
 
   // Get current user
   User? get currentUser => _auth.currentUser;
 
-  // Auth state changes stream
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  // Check if current user's email is verified
+  bool get isEmailVerified => currentUser?.emailVerified ?? false;
 
-  // Sign in with email and password
+  // Auth state changes stream
+  Stream<User?> get authStateChanges =>
+      _auth.authStateChanges(); // Sign in with email and password
   Future<UserCredential?> signInWithEmailAndPassword({
     required String email,
     required String password,
@@ -22,6 +29,27 @@ class AuthService {
         email: email,
         password: password,
       );
+
+      // Reload user to get latest verification status
+      await result.user?.reload();
+
+      // Check if email is verified
+      if (result.user != null && !result.user!.emailVerified) {
+        // Sign out the unverified user
+        await signOut();
+        throw Exception(
+          'Please verify your email before signing in. Check your inbox for the verification link.',
+        );
+      } // Update last active timestamp for verified users
+      if (result.user != null) {
+        // Create Firestore user document for verified users (if not exists)
+        await _userService.createUserDocument(
+          result.user!,
+          result.user!.displayName ?? 'User',
+        );
+        await _userService.updateLastActiveAt(result.user!.uid);
+      }
+
       return result;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
@@ -44,6 +72,13 @@ class AuthService {
       await result.user?.updateDisplayName(displayName);
       await result.user?.reload();
 
+      // Send email verification immediately after account creation
+      if (result.user != null) {
+        await result.user!.sendEmailVerification();
+        // Don't create Firestore document until email is verified
+        // We'll create it after verification during sign-in
+      }
+
       return result;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
@@ -53,10 +88,10 @@ class AuthService {
   // Sign in with Google
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      // Check if Google Play Services is available
-      await _googleSignIn.signInSilently();
+      // First sign out any existing Google account to force account selection
+      await _googleSignIn.signOut();
 
-      // Trigger the authentication flow
+      // Trigger the authentication flow (this will show account picker)
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
@@ -72,10 +107,18 @@ class AuthService {
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
-      );
+      ); // Sign in to Firebase with the Google credential
+      UserCredential result = await _auth.signInWithCredential(credential);
 
-      // Sign in to Firebase with the Google credential
-      return await _auth.signInWithCredential(credential);
+      // Create Firestore user document for new Google users
+      if (result.user != null) {
+        await _userService.createUserDocument(
+          result.user!,
+          result.user!.displayName ?? googleUser.displayName ?? 'User',
+        );
+      }
+
+      return result;
     } on PlatformException catch (e) {
       // Handle platform-specific errors
       switch (e.code) {
@@ -127,6 +170,65 @@ class AuthService {
       }
     } catch (e) {
       throw Exception('Failed to sign out: $e');
+    }
+  }
+
+  // Update user profile (Firebase Auth)
+  Future<void> updateProfile({String? displayName, String? photoURL}) async {
+    try {
+      final user = currentUser;
+      if (user != null) {
+        if (displayName != null) {
+          await user.updateDisplayName(displayName);
+        }
+        if (photoURL != null) {
+          await user.updatePhotoURL(photoURL);
+        }
+        await user.reload();
+      }
+    } catch (e) {
+      throw Exception('Failed to update profile: $e');
+    }
+  }
+
+  // Send email verification
+  Future<void> sendEmailVerification() async {
+    try {
+      final user = currentUser;
+      if (user != null && !user.emailVerified) {
+        await user.sendEmailVerification();
+      } else if (user?.emailVerified == true) {
+        throw Exception('Email is already verified');
+      } else {
+        throw Exception('No user found');
+      }
+    } catch (e) {
+      throw Exception('Failed to send verification email: $e');
+    }
+  }
+
+  // Reload user to check verification status
+  Future<void> reloadUser() async {
+    try {
+      await currentUser?.reload();
+    } catch (e) {
+      throw Exception('Failed to reload user: $e');
+    }
+  }
+
+  // Resend verification email
+  Future<void> resendVerificationEmail() async {
+    try {
+      final user = currentUser;
+      if (user != null && !user.emailVerified) {
+        await user.sendEmailVerification();
+      } else if (user?.emailVerified == true) {
+        throw Exception('Email is already verified');
+      } else {
+        throw Exception('No user found');
+      }
+    } catch (e) {
+      throw Exception('Failed to resend verification email: $e');
     }
   }
 

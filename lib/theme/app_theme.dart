@@ -143,7 +143,7 @@ class AppTheme {
     borderRadius: BorderRadius.circular(radiusMedium),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withOpacity(0.2),
+        color: Colors.black.withValues(alpha: 0.2),
         blurRadius: elevationMedium,
         offset: const Offset(0, 2),
       ),
@@ -174,12 +174,10 @@ class AppTheme {
         primary: primaryBlue,
         secondary: primaryBlueLight,
         surface: surfaceDark,
-        background: backgroundDark,
         error: error,
         onPrimary: textPrimary,
         onSecondary: textPrimary,
         onSurface: textPrimary,
-        onBackground: textPrimary,
         onError: textPrimary,
       ),
       scaffoldBackgroundColor: backgroundDark,

@@ -4,8 +4,14 @@ import '../theme/app_theme.dart';
 class MeterCard extends StatelessWidget {
   final String title;
   final String value;
+  final String? cost;
 
-  const MeterCard({super.key, required this.title, required this.value});
+  const MeterCard({
+    super.key,
+    required this.title,
+    required this.value,
+    this.cost,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -24,16 +30,32 @@ class MeterCard extends StatelessWidget {
                 size: 24,
               ),
               const SizedBox(width: AppTheme.spacingSmall),
-              Text(
-                title,
-                style: AppTheme.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w500,
+              Expanded(
+                child: Text(
+                  title,
+                  style: AppTheme.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: AppTheme.spacingMedium),
-          Text(value, style: AppTheme.headingMedium.copyWith(fontSize: 28)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(value, style: AppTheme.headingMedium.copyWith(fontSize: 28)),
+              if (cost != null)
+                Text(
+                  cost!,
+                  style: AppTheme.bodyLarge.copyWith(
+                    color: AppTheme.success,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );
