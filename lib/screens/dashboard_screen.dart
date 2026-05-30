@@ -13,7 +13,9 @@ import '../widgets/meter_card.dart';
 import 'profile_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final String? boxId;
+
+  const DashboardScreen({super.key, this.boxId = 'box_001'});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -21,6 +23,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _isSigningOut = false;
+  late String _currentBoxId;
 
   // Services
   final BoxService _boxService = BoxService();
@@ -50,10 +53,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Tariff rates
   static const double evRate = 12.0; // ₹12 per kWh
   static const double socketRate = 8.0; // ₹8 per kWh
-
   @override
   void initState() {
     super.initState();
+    _currentBoxId = widget.boxId ?? 'box_001';
+    print('Dashboard opened for box: $_currentBoxId');
     _initializeBox();
     _listenToStreams();
     _loadUserData();

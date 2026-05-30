@@ -9,6 +9,20 @@ class BoxService {
   static const String _boxCollection = 'boxes';
   static const String _defaultBoxId = 'box_001'; // Default box for this app
 
+  /// Validate if the box ID exists (for QR code and manual entry)
+  Future<bool> validateBoxId(String boxId) async {
+    try {
+      final boxDoc = await _firestore
+          .collection(_boxCollection)
+          .doc(boxId)
+          .get();
+      return boxDoc.exists;
+    } catch (e) {
+      print('Error validating box ID: $e');
+      return false;
+    }
+  }
+
   // Get box status stream
   Stream<BoxModel?> getBoxStatus([String? boxId]) {
     final id = boxId ?? _defaultBoxId;

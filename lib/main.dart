@@ -3,7 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'screens/login_screen.dart';
-import 'screens/dashboard_screen.dart';
+import 'screens/box_selection_screen.dart';
 import 'screens/email_verification_screen.dart';
 import 'theme/app_theme.dart';
 
@@ -66,14 +66,15 @@ class AuthWrapper extends StatelessWidget {
               ),
             ),
           );
-        } // User is signed in and verified
+        }
+        // User is signed in and verified
         if (snapshot.hasData && snapshot.data != null) {
           final user = snapshot.data!;
           // Additional check to ensure user is valid
           if (user.uid.isNotEmpty) {
             // Check if email is verified
             if (user.emailVerified) {
-              return const DashboardScreen();
+              return const BoxSelectionScreen();
             } else {
               // Email is not verified, show verification screen
               return const EmailVerificationScreen();

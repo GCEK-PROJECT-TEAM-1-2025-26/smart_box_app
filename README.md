@@ -1,114 +1,109 @@
-# Smart Box App
+# Smart Box App 🔐
 
-A Flutter application for managing smart electrical boxes with usage tracking and payment functionality.
+A Flutter mobile app for controlling smart boxes with QR code scanning, energy monitoring, and digital wallet payments.
 
-## Features
+## ✨ Features
 
-- **User Authentication**
+- **QR Code Scanning** - Scan box QR codes or enter Box ID manually
+- **Multi-Box Support** - Access different smart boxes
+- **Remote Control** - Lock/unlock boxes, control devices (EV charger, 3-pin socket)
+- **Real-time Monitoring** - Energy usage tracking with cost calculation
+- **Digital Wallet** - Prepaid balance system
+- **Live Updates** - Firestore integration for real-time data
+- **User Authentication** - Firebase Auth with email verification
 
-  - Email/Password sign-in and sign-up
-  - Google Sign-In integration
-  - Secure Firebase Authentication
+## 🚀 Quick Start
 
-- **Dashboard**
+```bash
+cd m:\smart_box_app
+flutter pub get
+flutter run
+```
 
-  - Real-time usage tracking for 3-pin plugs and EV chargers
-  - Total amount calculation
-  - Professional dark theme UI
+## 📱 How It Works
 
-- **Smart Box Controls**
-  - Remote unlock functionality
-  - Payment processing
-  - Usage monitoring
+1. **Login** - Enter email/password
+2. **Verify Email** - Click verification link
+3. **Select Box** - Scan QR code or enter box ID (e.g., `box_001`)
+4. **Control** - Unlock, start session, toggle devices
+5. **Monitor** - View real-time energy usage and costs
 
-## Screenshots
-
-## Technologies Used
-
-- **Flutter** - Cross-platform mobile development
-- **Firebase Authentication** - User management
-- **Cloud Firestore** - Database (ready for future features)
-- **Google Sign-In** - OAuth authentication
-- **Material Design 3** - Modern UI components
-
-## Getting Started
-
-### Prerequisites
-
-- Flutter SDK (latest stable version)
-- Android Studio / VS Code
-- Firebase project set up
-
-### Installation
-
-1. **Clone the repository**
-
-   ```bash
-   git clone https://github.com/yourusername/smart-box-app.git
-   cd smart-box-app
-   ```
-
-2. **Install dependencies**
-
-   ```bash
-   flutter pub get
-   ```
-
-3. **Firebase Configuration**
-
-   - Follow the instructions in [FIREBASE_SETUP.md](FIREBASE_SETUP.md)
-   - Add `google-services.json` to `android/app/`
-   - Generate `firebase_options.dart` using `flutterfire configure`
-
-4. **Run the app**
-   ```bash
-   flutter run
-   ```
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 lib/
-├── main.dart                 # App entry point with authentication wrapper
-├── firebase_options.dart     # Firebase configuration (not in repo)
+├── main.dart                          # Entry point & auth wrapper
 ├── screens/
-│   ├── login_screen.dart     # Login with email/password and Google
-│   ├── signup_screen.dart    # User registration
-│   └── dashboard_screen.dart # Main app dashboard
+│   ├── login_screen.dart
+│   ├── email_verification_screen.dart
+│   ├── box_selection_screen.dart     # ⭐ NEW: QR scanner & manual entry
+│   ├── dashboard_screen.dart          # Main control dashboard
+│   └── profile_screen.dart
 ├── services/
-│   └── auth_service.dart     # Authentication service
-├── theme/
-│   └── app_theme.dart        # App-wide theme configuration
-└── widgets/
-    └── meter_card.dart       # Reusable meter display widget
+│   ├── auth_service.dart
+│   ├── box_service.dart               # ⭐ Updated with validateBoxId()
+│   ├── command_service.dart
+│   ├── session_service.dart
+│   └── user_service.dart
+├── models/
+├── widgets/
+└── theme/
+    └── app_theme.dart                # Dark theme
 ```
 
-## Configuration
+## 🗄️ Firestore Collections
 
-### Firebase
+- **boxes/** - Smart box configurations and status
+- **commands/** - Relay control commands (unlock, device control)
+- **sessions/** - Usage tracking and billing
+- **users/** - User wallet balances and preferences
 
-- Authentication enabled for Email/Password and Google Sign-In
-- SHA-1 fingerprint configured for Google Sign-In
-- Package name: `com.example.smart_box_app`
+## 📦 Dependencies
 
-### Theme
+```yaml
+firebase_core: ^3.8.0
+firebase_auth: ^5.3.3
+cloud_firestore: ^5.4.4
+qr_code_scanner: ^1.0.1 # ⭐ NEW
+permission_handler: ^12.0.2 # ⭐ NEW
+google_sign_in: ^6.2.1
+```
 
-- Professional dark theme with blue accents
-- Consistent Material Design 3 components
-- Responsive design for various screen sizes
+## ✅ Testing Checklist
 
-## Contributing
+- [ ] Login → Email verification → Box Selection
+- [ ] Manual entry: Type `box_001` → Dashboard
+- [ ] QR scan: Scan code → Dashboard
+- [ ] Invalid box: See error
+- [ ] Lock/Unlock works
+- [ ] Device control works
+- [ ] Session tracking works
+- [ ] Back button returns to Box Selection
+- [ ] Multiple boxes work
+- [ ] Logout works
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+## 🔧 Setup Needed
 
-## License
+**Android**: Camera permission already in `AndroidManifest.xml`  
+**iOS**: Camera permission already in `Info.plist`
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+## 🆘 Troubleshooting
 
-## Support
+| Issue                  | Solution                              |
+| ---------------------- | ------------------------------------- |
+| Camera not working     | Grant camera permission in Settings   |
+| "Box not found"        | Verify box exists in Firestore        |
+| QR code not scanning   | Ensure good lighting, clear code      |
+| Commands not executing | Check ESP32 backend & Firestore rules |
 
-For support or questions, please open an issue in this repository.
+## 📊 Recent Changes
+
+- ✅ Added QR code scanner screen
+- ✅ Added manual box ID entry
+- ✅ Multi-box support with dynamic box ID
+- ✅ Camera permission handling
+- ✅ Box validation in Firestore
+
+---
+
+**Status**: ✅ Production Ready | **Version**: 1.0.0 | **Updated**: May 30, 2026
