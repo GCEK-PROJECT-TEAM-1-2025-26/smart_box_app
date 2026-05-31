@@ -26,12 +26,18 @@ class BoxService {
   // Get box status stream
   Stream<BoxModel?> getBoxStatus([String? boxId]) {
     final id = boxId ?? _defaultBoxId;
+    print('DEBUG: getBoxStatus - requesting boxId: $id');
     return _firestore.collection(_boxCollection).doc(id).snapshots().map((
       snapshot,
     ) {
+      print(
+        'DEBUG: getBoxStatus snapshot - boxId: $id, exists: ${snapshot.exists}',
+      );
       if (snapshot.exists && snapshot.data() != null) {
+        print('DEBUG: getBoxStatus - found data for $id');
         return BoxModel.fromFirestore(snapshot.data()!);
       }
+      print('DEBUG: getBoxStatus - NO data for $id');
       return null;
     });
   }
@@ -114,6 +120,8 @@ class BoxService {
   Future<void> initializeBox([String? boxId, String? location]) async {
     try {
       final id = boxId ?? _defaultBoxId;
+      print('DEBUG: Initializing box: $id');
+
       final box = BoxModel(
         boxId: id,
         location: location ?? 'Smart Box Location',
@@ -130,11 +138,15 @@ class BoxService {
         status: 'available',
       );
 
+      // Use merge: true to preserve ESP32 updates, but ensure all fields exist
       await _firestore
           .collection(_boxCollection)
           .doc(id)
           .set(box.toFirestore(), SetOptions(merge: true));
+
+      print('DEBUG: Box $id initialized successfully');
     } catch (e) {
+      print('DEBUG: Error initializing box: $e');
       throw Exception('Failed to initialize box: $e');
     }
   }
@@ -156,6 +168,9 @@ class BoxService {
   Future<String> sendUnlockCommand(String userId, [String? boxId]) async {
     try {
       final id = boxId ?? _defaultBoxId;
+      print(
+        'DEBUG: sendUnlockCommand - boxId parameter: $boxId, using id: $id',
+      );
 
       // Check if box can be unlocked first
       final canUnlock = await canUnlockBox(id);

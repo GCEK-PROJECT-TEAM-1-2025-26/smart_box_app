@@ -52,15 +52,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // Tariff rates
   static const double evRate = 12.0; // ₹12 per kWh
-  static const double socketRate = 8.0; // ₹8 per kWh
-  @override
+  static const double socketRate = 8.0; // ₹8 per kWh  @override
   void initState() {
     super.initState();
     _currentBoxId = widget.boxId ?? 'box_001';
     print('Dashboard opened for box: $_currentBoxId');
-    _initializeBox();
-    _listenToStreams();
+    _initializeBoxAndListen();
     _loadUserData();
+  }
+
+  // Initialize box and then start listening to streams
+  void _initializeBoxAndListen() async {
+    try {
+      await _initializeBox();
+      _listenToStreams();
+    } catch (e) {
+      print('Error during box initialization: $e');
+      // Still listen to streams even if initialization fails
+      _listenToStreams();
+    }
   }
 
   @override
@@ -69,9 +79,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.dispose();
   }
 
-  void _initializeBox() async {
+  Future<void> _initializeBox() async {
     try {
-      await _boxService.initializeBox();
+      await _boxService.initializeBox(_currentBoxId);
     } catch (e) {
       print('Error initializing box: $e');
     }
@@ -81,7 +91,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final user = _authService.currentUser;
     if (user != null) {
       // Listen to box status
-      _boxService.getBoxStatus().listen((box) {
+      _boxService.getBoxStatus(_currentBoxId).listen((box) {
+        print(
+          'DEBUG: Box status received for $_currentBoxId: isLocked=${box?.isLocked}, rfidDetected=${box?.rfidDetected}, status=${box?.status}',
+        );
         setState(() {
           _currentBox = box;
         });
@@ -213,7 +226,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final user = _authService.currentUser;
       if (user == null) throw Exception('User not authenticated');
 
-      final commandId = await _boxService.sendUnlockCommand(user.uid);
+      final commandId = await _boxService.sendUnlockCommand(
+        user.uid,
+        _currentBoxId,
+      );
 
       _boxService.getCommandStatus(commandId).listen((command) {
         if (command != null) {
@@ -255,7 +271,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
 
       await _sessionService.startSession(user.uid, _currentBox!.boxId);
-      await _boxService.updateBoxStatus('in_use');
+      await _boxService.updateBoxStatus('in_use', _currentBoxId);
 
       _showSnackBar('Session started!', AppTheme.success);
     } catch (e) {
@@ -276,7 +292,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
 
     try {
-      final canStop = await _boxService.canStopSession();
+      final canStop = await _boxService.canStopSession(_currentBoxId);
       if (!canStop) {
         throw Exception(
           'Cannot stop session. Please lock the box and place RFID card inside.',
@@ -287,7 +303,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final totalCost = _currentEvCost + _currentSocketCost;
 
         await _sessionService.endSession(_activeSession!.sessionId, totalCost);
-        await _boxService.updateBoxStatus('available');
+        await _boxService.updateBoxStatus('available', _currentBoxId);
 
         await _toggleDevice('evCharger', false);
         await _toggleDevice('threePinSocket', false);
@@ -318,6 +334,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         user.uid,
         deviceType,
         turnOn,
+        _currentBoxId,
       );
 
       final deviceName = deviceType == 'evCharger'

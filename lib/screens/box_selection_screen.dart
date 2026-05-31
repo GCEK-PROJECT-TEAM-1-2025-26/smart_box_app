@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/box_service.dart';
@@ -15,16 +15,14 @@ class BoxSelectionScreen extends StatefulWidget {
 
 class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
   final TextEditingController _boxIdController = TextEditingController();
-  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  QRViewController? qrViewController;
+  MobileScannerController? mobileScannerController;
   bool _isScanning = false;
   bool _isLoading = false;
   String? _scannedBoxId;
-
   @override
   void dispose() {
     _boxIdController.dispose();
-    qrViewController?.dispose();
+    mobileScannerController?.dispose();
     super.dispose();
   }
 
@@ -41,7 +39,6 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
       }
     }
   }
-
   Future<void> _validateAndAccessBox(String boxId) async {
     if (boxId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -74,7 +71,7 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
           );
           setState(() => _scannedBoxId = null);
           if (_isScanning) {
-            qrViewController?.resumeCamera();
+            mobileScannerController?.start();
           }
         }
       }
@@ -93,21 +90,6 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
       }
     }
   }
-
-  void _onQRViewCreated(QRViewController controller) {
-    setState(() => qrViewController = controller);
-    controller.scannedDataStream.listen((scanData) {
-      if (_scannedBoxId == null) {
-        final scannedBoxId = scanData.code;
-        if (scannedBoxId != null && scannedBoxId.isNotEmpty) {
-          setState(() => _scannedBoxId = scannedBoxId);
-          controller.pauseCamera();
-          _validateAndAccessBox(scannedBoxId);
-        }
-      }
-    });
-  }
-
   void _logout() {
     FirebaseAuth.instance.signOut();
   }
@@ -132,20 +114,26 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
       body: _isScanning ? _buildQRScanner() : _buildManualEntry(),
     );
   }
-
   Widget _buildQRScanner() {
     return Stack(
       children: [
-        QRView(
-          key: qrKey,
-          onQRViewCreated: _onQRViewCreated,
-          overlay: QrScannerOverlayShape(
-            borderColor: AppTheme.primaryBlue,
-            borderRadius: 10,
-            borderLength: 30,
-            borderWidth: 10,
-            cutOutSize: 300,
+        MobileScanner(
+          controller: MobileScannerController(
+            detectionSpeed: DetectionSpeed.noDuplicates,
+            returnImage: false,
           ),
+          onDetect: (capture) {
+            if (_scannedBoxId == null) {
+              final List<Barcode> barcodes = capture.barcodes;
+              if (barcodes.isNotEmpty) {
+                final scannedBoxId = barcodes.first.rawValue;
+                if (scannedBoxId != null && scannedBoxId.isNotEmpty) {
+                  setState(() => _scannedBoxId = scannedBoxId);
+                  _validateAndAccessBox(scannedBoxId);
+                }
+              }
+            }
+          },
         ),
         Positioned(
           top: 20,
@@ -174,7 +162,6 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
             onPressed: () {
-              qrViewController?.resumeCamera();
               setState(() {
                 _isScanning = false;
                 _scannedBoxId = null;
