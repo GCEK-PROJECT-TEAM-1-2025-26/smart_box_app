@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/box_service.dart';
 import '../theme/app_theme.dart';
 import 'dashboard_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class BoxSelectionScreen extends StatefulWidget {
   const BoxSelectionScreen({super.key});
@@ -19,6 +20,14 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
   bool _isScanning = false;
   bool _isLoading = false;
   String? _scannedBoxId;
+  List<Map<String, dynamic>> _boxes = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBoxes();
+  }
+
   @override
   void dispose() {
     _boxIdController.dispose();
@@ -39,6 +48,7 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
       }
     }
   }
+
   Future<void> _validateAndAccessBox(String boxId) async {
     if (boxId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -90,8 +100,33 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
       }
     }
   }
+
   void _logout() {
     FirebaseAuth.instance.signOut();
+  }
+
+  Future<void> _loadBoxes() async {
+    final boxes = await BoxService().getAllBoxes();
+
+    if (mounted) {
+      setState(() {
+        _boxes = boxes;
+      });
+    }
+  }
+
+  Future<void> _openGoogleMaps(double latitude, double longitude) async {
+    final Uri googleMapsUrl = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude',
+    );
+
+    if (await canLaunchUrl(googleMapsUrl)) {
+      await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open Google Maps')),
+      );
+    }
   }
 
   @override
@@ -114,6 +149,7 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
       body: _isScanning ? _buildQRScanner() : _buildManualEntry(),
     );
   }
+
   Widget _buildQRScanner() {
     return Stack(
       children: [
@@ -281,6 +317,40 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
                   icon: const Icon(Icons.qr_code_scanner),
                   label: const Text('Scan QR Code'),
                 ),
+              ),
+              const SizedBox(height: 30),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Nearby Smart Boxes', style: AppTheme.headingSmall),
+              ),
+              const SizedBox(height: 16),
+              Column(
+                children: _boxes.map((box) {
+                  return Card(
+                    color: AppTheme.surfaceDark,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: ListTile(
+                      leading: const Icon(
+                        Icons.location_on,
+                        color: Colors.green,
+                      ),
+                      title: Text(box['boxId'], style: AppTheme.bodyMedium),
+                      subtitle: Text(
+                        'Smart Box Location',
+                        style: AppTheme.bodySmall,
+                      ),
+                      trailing: ElevatedButton(
+                        onPressed: () {
+                          _openGoogleMaps(
+                            (box['latitude'] as num).toDouble(),
+                            (box['longitude'] as num).toDouble(),
+                          );
+                        },
+                        child: const Text('Navigate'),
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
             ],
           ),

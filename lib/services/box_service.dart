@@ -23,6 +23,23 @@ class BoxService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> getAllBoxes() async {
+    try {
+      final snapshot = await _firestore.collection(_boxCollection).get();
+
+      return snapshot.docs.map((doc) {
+        return {
+          'boxId': doc.id,
+          'latitude': doc['latitude'],
+          'longitude': doc['longitude'],
+        };
+      }).toList();
+    } catch (e) {
+      print('Error fetching all boxes: $e');
+      return [];
+    }
+  }
+
   // Get box status stream
   Stream<BoxModel?> getBoxStatus([String? boxId]) {
     final id = boxId ?? _defaultBoxId;
