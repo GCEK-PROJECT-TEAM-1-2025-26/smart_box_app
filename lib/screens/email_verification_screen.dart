@@ -139,16 +139,16 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     final userEmail = _authService.currentUser?.email ?? '';
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundDark,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('Verify Email', style: AppTheme.headingSmall),
-        backgroundColor: AppTheme.surfaceDark,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
             onPressed: _signOut,
-            icon: const Icon(Icons.logout, color: AppTheme.textPrimary),
+            icon: Icon(Icons.logout, color: Theme.of(context).colorScheme.onSurface),
             tooltip: 'Sign Out',
           ),
         ],
@@ -180,7 +180,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               Text(
                 'Verify Your Email',
                 style: AppTheme.headingLarge.copyWith(
-                  color: AppTheme.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -191,7 +191,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               Text(
                 'We sent a verification link to:',
                 style: AppTheme.bodyLarge.copyWith(
-                  color: AppTheme.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -205,7 +205,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                   vertical: AppTheme.spacingSmall,
                 ),
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceDark,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
                   border: Border.all(
                     color: AppTheme.primaryBlue.withValues(alpha: 0.3),
@@ -226,13 +226,13 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               // Instructions
               Container(
                 padding: const EdgeInsets.all(AppTheme.spacingMedium),
-                decoration: AppTheme.cardDecoration,
+                decoration: AppTheme.cardDecoration(context),
                 child: Column(
                   children: [
                     Text(
                       'Check your email and click the verification link to activate your account.',
                       style: AppTheme.bodyMedium.copyWith(
-                        color: AppTheme.textSecondary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -240,7 +240,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                     Text(
                       'This page will automatically update when verified.',
                       style: AppTheme.bodySmall.copyWith(
-                        color: AppTheme.textHint,
+                        color: Theme.of(context).hintColor,
                         fontStyle: FontStyle.italic,
                       ),
                       textAlign: TextAlign.center,
@@ -264,7 +264,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                     Text(
                       'Checking verification status...',
                       style: AppTheme.bodySmall.copyWith(
-                        color: AppTheme.textHint,
+                        color: Theme.of(context).hintColor,
                       ),
                     ),
                   ],
@@ -307,7 +307,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                         : 'Resend Verification Email',
                     style: AppTheme.bodyMedium.copyWith(
                       color: _resendCountdown > 0 || _isResending
-                          ? AppTheme.textHint
+                          ? Theme.of(context).hintColor
                           : AppTheme.primaryBlue,
                       fontWeight: FontWeight.w600,
                     ),
@@ -330,7 +330,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                   child: Text(
                     'Sign Out',
                     style: AppTheme.bodyMedium.copyWith(
-                      color: AppTheme.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),

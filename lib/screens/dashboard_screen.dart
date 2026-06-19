@@ -416,7 +416,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              backgroundColor: AppTheme.surfaceDark,
+              backgroundColor: Theme.of(context).colorScheme.surface,
               title: Text('Sign Out', style: AppTheme.headingSmall),
               content: Text(
                 'Are you sure you want to sign out?',
@@ -428,7 +428,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Text(
                     'Cancel',
                     style: AppTheme.labelLarge.copyWith(
-                      color: AppTheme.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -452,7 +452,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (user == null) {
       return Scaffold(
-        backgroundColor: AppTheme.backgroundDark,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: const Center(
           child: CircularProgressIndicator(color: AppTheme.primaryBlue),
         ),
@@ -464,10 +464,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final rfidDetected = _currentBox?.rfidDetected ?? false;
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundDark,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text("Dashboard", style: AppTheme.headingSmall),
-        backgroundColor: AppTheme.surfaceDark,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         actions: [
           // Wallet Balance in App Bar (only place where wallet is shown)
@@ -525,17 +525,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         );
                       },
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.person,
-                        color: AppTheme.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       tooltip: 'Profile',
                     ),
                     IconButton(
                       onPressed: _signOut,
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.logout,
-                        color: AppTheme.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       tooltip: 'Sign Out',
                     ),
@@ -553,7 +553,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(AppTheme.spacingLarge),
-                decoration: AppTheme.cardDecoration,
+                decoration: AppTheme.cardDecoration(context),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -749,7 +749,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         _currentBox!.evCharger.isOn
                             ? Icons.ev_station
                             : Icons.ev_station_outlined,
-                        color: AppTheme.textPrimary,
+                        color: Colors.white,
                       ),
                       label: Text(
                         _currentBox!.evCharger.isOn
@@ -761,7 +761,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         backgroundColor: _currentBox!.evCharger.isOn
                             ? AppTheme.success
                             : AppTheme.primaryBlue,
-                        foregroundColor: AppTheme.textPrimary,
+                        foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
                             AppTheme.radiusMedium,
@@ -786,7 +786,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         _currentBox!.threePinSocket.isOn
                             ? Icons.power
                             : Icons.power_outlined,
-                        color: AppTheme.textPrimary,
+                        color: Colors.white,
                       ),
                       label: Text(
                         _currentBox!.threePinSocket.isOn
@@ -798,7 +798,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         backgroundColor: _currentBox!.threePinSocket.isOn
                             ? AppTheme.success
                             : AppTheme.primaryBlue,
-                        foregroundColor: AppTheme.textPrimary,
+                        foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
                             AppTheme.radiusMedium,
@@ -818,11 +818,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 height: 55,
                 child: ElevatedButton.icon(
                   onPressed: _getMainButtonAction(),
-                  icon: Icon(_getMainButtonIcon(), color: AppTheme.textPrimary),
+                  icon: Icon(_getMainButtonIcon(), color: Colors.white),
                   label: Text(_getMainButtonText(), style: AppTheme.labelLarge),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _getMainButtonColor(),
-                    foregroundColor: AppTheme.textPrimary,
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(
                         AppTheme.radiusMedium,
@@ -847,7 +847,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         AppTheme.primaryBlue,
                       );
                     },
-                    icon: const Icon(Icons.add, color: AppTheme.textPrimary),
+                    icon: const Icon(Icons.add, color: Colors.white),
                     label: Text("Recharge Wallet", style: AppTheme.labelLarge),
                     style: AppTheme.primaryButtonStyle,
                   ),

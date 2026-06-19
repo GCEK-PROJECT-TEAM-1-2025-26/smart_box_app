@@ -98,7 +98,7 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppTheme.backgroundDark,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         title: const Text('Select Smart Box'),
         elevation: 0,
         centerTitle: true,
@@ -110,7 +110,7 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
           ),
         ],
       ),
-      backgroundColor: AppTheme.backgroundDark,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: _isScanning ? _buildQRScanner() : _buildManualEntry(),
     );
   }
@@ -186,7 +186,7 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceDark,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
@@ -223,10 +223,10 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[700]!),
+                    borderSide: BorderSide(color: Theme.of(context).dividerColor),
                   ),
                   filled: true,
-                  fillColor: AppTheme.surfaceDark,
+                  fillColor: Theme.of(context).colorScheme.surface,
                 ),
                 textCapitalization: TextCapitalization.none,
               ),

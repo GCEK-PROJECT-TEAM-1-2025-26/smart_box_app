@@ -18,7 +18,7 @@ class MeterCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppTheme.spacingLarge),
-      decoration: AppTheme.cardDecoration,
+      decoration: AppTheme.cardDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
