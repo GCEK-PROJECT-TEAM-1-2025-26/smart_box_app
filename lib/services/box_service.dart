@@ -23,6 +23,25 @@ class BoxService {
     }
   }
 
+  /// Get box owned by the user (returns the first matching box model, if any)
+  Future<BoxModel?> getOwnedBox(String userId) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(_boxCollection)
+          .where('ownerId', isEqualTo: userId)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        return BoxModel.fromFirestore(querySnapshot.docs.first.data());
+      }
+      return null;
+    } catch (e) {
+      print('Error querying owned box: $e');
+      return null;
+    }
+  }
+
   // Get box status stream
   Stream<BoxModel?> getBoxStatus([String? boxId]) {
     final id = boxId ?? _defaultBoxId;

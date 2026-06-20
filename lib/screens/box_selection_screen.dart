@@ -19,6 +19,27 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
   bool _isScanning = false;
   bool _isLoading = false;
   String? _scannedBoxId;
+  String? _ownedBoxId;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkOwnedBox();
+  }
+
+  Future<void> _checkOwnedBox() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final boxService = BoxService();
+      final ownedBox = await boxService.getOwnedBox(user.uid);
+      if (ownedBox != null && mounted) {
+        setState(() {
+          _ownedBoxId = ownedBox.boxId;
+        });
+      }
+    }
+  }
+
   @override
   void dispose() {
     _boxIdController.dispose();
@@ -230,6 +251,27 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
                 ),
                 textCapitalization: TextCapitalization.none,
               ),
+              if (_ownedBoxId != null) ...[
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.success,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: _isLoading
+                        ? null
+                        : () => _validateAndAccessBox(_ownedBoxId!),
+                    icon: const Icon(Icons.vpn_key, color: Colors.white),
+                    label: Text('Access My Owned Box ($_ownedBoxId)'),
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
