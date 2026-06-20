@@ -11,6 +11,7 @@ import '../models/session_model.dart';
 import '../models/command_model.dart';
 import '../widgets/meter_card.dart';
 import 'profile_screen.dart';
+import 'box_selection_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final String? boxId;
@@ -466,6 +467,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const BoxSelectionScreen(),
+              ),
+            );
+          },
+        ),
         title: Text("Dashboard", style: AppTheme.headingSmall),
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,

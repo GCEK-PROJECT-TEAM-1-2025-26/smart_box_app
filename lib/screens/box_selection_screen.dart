@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/box_service.dart';
 import '../theme/app_theme.dart';
 import 'dashboard_screen.dart';
+import 'owner_dashboard_screen.dart';
 
 class BoxSelectionScreen extends StatefulWidget {
   const BoxSelectionScreen({super.key});
@@ -266,7 +267,13 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
                     ),
                     onPressed: _isLoading
                         ? null
-                        : () => _validateAndAccessBox(_ownedBoxId!),
+                        : () {
+                            Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(
+                                builder: (context) => OwnerDashboardScreen(boxId: _ownedBoxId!),
+                              ),
+                            );
+                          },
                     icon: const Icon(Icons.vpn_key, color: Colors.white),
                     label: Text('Access My Owned Box ($_ownedBoxId)'),
                   ),
