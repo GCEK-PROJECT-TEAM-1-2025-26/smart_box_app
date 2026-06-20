@@ -164,15 +164,16 @@ class _BoxMapScreenState extends State<BoxMapScreen> {
                 userAgentPackageName: 'com.example.smart_box_app',
               ),
 
-              PolylineLayer(
-                polylines: [
-                  Polyline(
-                    points: _routePoints,
-                    strokeWidth: 4,
-                    color: Colors.blue,
-                  ),
-                ],
-              ),
+              if (_routePoints.isNotEmpty)
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: _routePoints,
+                      strokeWidth: 4,
+                      color: Colors.blue,
+                    ),
+                  ],
+                ),
 
               MarkerLayer(
                 markers: [
