@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Box: System Architecture & Functional Overview</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --text-secondary: #475569;
+      --border: #e2e8f0;
+      --code-bg: #f1f5f9;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-amber: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 3rem;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+      position: relative;
+    }
+
+    header {
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      color: var(--text);
+      border-left: 4px solid var(--primary);
+      padding-left: 0.75rem;
+    }
+
+    h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+      color: var(--text);
+    }
+
+    p {
+      margin-bottom: 1rem;
+      color: var(--text-secondary);
+    }
+
+    /* Print/PDF Export Button */
+    .no-print {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 1.5rem;
+    }
+
+    .btn-print {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background-color 0.2s ease;
+      box-shadow: 0 2px 4px rgb(37 99 235 / 0.2);
+    }
+
+    .btn-print:hover {
+      background-color: var(--primary-hover);
+    }
+
+    /* Lists */
+    ul {
+      margin-bottom: 1.25rem;
+      padding-left: 1.5rem;
+      color: var(--text-secondary);
+    }
+
+    li {
+      margin-bottom: 0.5rem;
+    }
+
+    /* Code Blocks */
+    pre {
+      background-color: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      margin-bottom: 1.5rem;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+
+    :not(pre) > code {
+      background-color: var(--code-bg);
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1.5rem;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f8fafc;
+      font-weight: 600;
+    }
+
+    /* Mermaid diagrams container */
+    .mermaid-container {
+      display: flex;
+      justify-content: center;
+      margin: 2rem 0;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background-color: #fdfdfd;
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px solid var(--border);
+      margin: 2.5rem 0;
+    }
+
+    /* Badge indicators */
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    
+    .badge-primary { background: #dbeafe; color: #1e40af; }
+    .badge-green { background: #d1fae5; color: #065f46; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+
+    /* Print Styles */
+    @media print {
+      body {
+        background-color: white;
+        padding: 0;
+      }
+
+      .container {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        max-width: 100%;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      pre, .mermaid-container, blockquote, tr {
+        page-break-inside: avoid;
+      }
+
+      h1, h2, h3 {
+        page-break-after: avoid;
+      }
+    }
+  </style>
+
+  <!-- Load Mermaid JS from CDN -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ 
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose'
+    });
+  </script>
+</head>
+<body>
+
+  <div class="no-print container" style="max-width: 900px; box-shadow: none; border: none; background: transparent; padding: 0 0 1rem 0; display: flex; justify-content: flex-end;">
+    <button class="btn-print" onclick="window.print()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+        <rect x="6" y="14" width="12" height="8"></rect>
+      </svg>
+      Print to PDF
+    </button>
+  </div>
+
+  <div class="container">
+    <header>
+      <h1>🔐 Smart Box: System Architecture & Functional Overview</h1>
+    </header>
+
+    <section>
+      <p>This document provides a comprehensive, high-level analysis of the <strong>Smart Box</strong> ecosystem, an end-to-end IoT platform for prepaid energy-metered vehicle and appliance charging. The system comprises an ESP32 hardware controller, a Next.js admin dashboard, and a Flutter mobile application, all integrated seamlessly using a real-time Firebase Firestore database.</p>
+    </section>
+
+    <hr>
+
+    <section>
+      <h2>📌 System Topology</h2>
+      <div class="mermaid-container">
+        <div class="mermaid">
+graph TD
+    subgraph "Clients"
+        A["Flutter Mobile App"]
+        B["Next.js Admin Dashboard"]
+    end
+
+    subgraph "Database & Backend"
+        C[("Firebase Firestore")]
+        D["Next.js Serverless API (Vercel)"]
+    end
+
+    subgraph "IoT Hardware (ESP32)"
+        E["ESP32 Microcontroller"]
+        F["SSD1306 OLED Display"]
+        G["PZEM-004T #1 (EV Charger)"]
+        H["PZEM-004T #2 (3-Pin Socket)"]
+        I["Solenoid Lock & Feedback GPIO"]
+        J["RFID Sensor GPIO"]
+        K["Relays (EV & 3-Pin)"]
+    end
+
+    A -- "Reads/Writes Status" --> C
+    B -- "Reads/Writes Status" --> C
+    E -- "Polls & ACKs" --> D
+    D -- "Updates Status & Logs" --> C
+    E -- "I2C" --> F
+    E -- "Serial 2" --> G
+    E -- "Serial 1" --> H
+    E -- "GPIO" --> I
+    E -- "GPIO" --> J
+    E -- "GPIO" --> K
+        </div>
+      </div>
+    </section>
+
+    <hr>
+
+    <section>
+      <h2>🚀 Architectural Component Analysis</h2>
+      <p>The system is built on a distributed IoT-Cloud-Client pattern, dividing responsibilities among three core platforms:</p>
+
+      <h3>1. IoT Hardware & Firmware (ESP32)</h3>
+      <ul>
+        <li><strong>Microcontroller:</strong> ESP32 running C++ code built via PlatformIO.</li>
+        <li><strong>Network & Security:</strong> Secures connection via local WiFi using custom-configured DNS servers (<code>8.8.8.8</code>, <code>1.1.1.1</code>) and HTTPS (Vercel API calls configured with TLS verification disabled <code>setInsecure()</code> for development).</li>
+        <li><strong>Display Interface:</strong> An Adafruit 128x64 SSD1306 I2C OLED display (running on SDA GPIO 21, SCL GPIO 22). The firmware automatically rotates through 4 informational screens every 5 seconds:
+          <ul>
+            <li><strong>Main Status Screen:</strong> Displays Device ID, WiFi network status, lock state (LOCKED/UNLOCKED), RFID presence (DETECTED/NONE), and current relay states.</li>
+            <li><strong>Energy Readings Screen:</strong> Displays detailed live parameters (Voltage, Current, Power, Energy) for both EV charger and 3-pin outlets.</li>
+            <li><strong>Network Status Screen:</strong> Displays network credentials, device health, and the last executed command ID.</li>
+            <li><strong>Diagnostics Screen:</strong> Displays device uptime and last known backend communication error codes.</li>
+          </ul>
+        </li>
+        <li><strong>Control Outputs:</strong>
+          <ul>
+            <li><strong>Solenoid Lock Control:</strong> Triggered via GPIO 5 (<code>LOCK_CONTROL_PIN</code>).</li>
+            <li><strong>EV Charger Relay:</strong> Controlled via GPIO 19 (<code>EV_RELAY_PIN</code>).</li>
+            <li><strong>3-Pin Socket Relay:</strong> Controlled via GPIO 23 (<code>P3_RELAY_PIN</code>).</li>
+          </ul>
+        </li>
+        <li><strong>Sensor Inputs:</strong>
+          <ul>
+            <li><strong>Lock Status Feedback:</strong> Read from GPIO 18 (<code>LOCK_FEEDBACK_PIN</code>).</li>
+            <li><strong>RFID Card Status Detector:</strong> Read from GPIO 32 (<code>RFID_STATUS_PIN</code>).</li>
+            <li><strong>Energy Meters (PZEM-004T v3.0):</strong> Two independent modules communicating via serial lines:
+              <ul>
+                <li><strong>EV Charger PZEM:</strong> Configured on Hardware Serial <code>Serial2</code> (RX GPIO 16, TX GPIO 17, address <code>0xF8</code>).</li>
+                <li><strong>3-Pin Socket PZEM:</strong> Configured on Software/Hardware Serial <code>Serial1</code> (RX GPIO 13, TX GPIO 12, address <code>0xF8</code>).</li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+      </ul>
+
+      <h3>2. Backend API Layer & Admin Panel (Next.js)</h3>
+      <ul>
+        <li><strong>Framework:</strong> Next.js (React/TypeScript) deployed on Vercel.</li>
+        <li><strong>Endpoints for ESP32:</strong>
+          <ul>
+            <li><code>GET /api/esp/next-command</code>: Checks for pending commands targeting the specific device in Firestore, mapping them to simplified instructions:
+              <ul>
+                <li>Solenoid actions: <code>LOCK</code> or <code>UNLOCK</code>.</li>
+                <li>Relays states: <code>ev</code> (true/false), <code>p3</code> (true/false).</li>
+              </ul>
+            </li>
+            <li><code>POST /api/esp/ack</code>: Accepts sensor reports, lock feedback, and PZEM energy measurements from the ESP32. Updates command status to <code>completed</code> or <code>failed</code>, stores live variables in the box profile, and logs historical readings into <code>energy_readings</code> for time-series analysis.</li>
+          </ul>
+        </li>
+        <li><strong>Admin Web Dashboard:</strong>
+          <ul>
+            <li>Monitors real-time stats including total/active users, total/active boxes, active session metrics, and daily/cumulative revenues.</li>
+            <li>Provides panels to manage boxes (force toggling relays, locking/unlocking), register users, and manually stop hanging sessions.</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h3>3. Client Application (Flutter Mobile App)</h3>
+      <ul>
+        <li><strong>Platform:</strong> Cross-platform Flutter app for users.</li>
+        <li><strong>Authentication:</strong> Firebase Auth with email verification.</li>
+        <li><strong>Core Flows:</strong>
+          <ol>
+            <li><strong>Box Selection:</strong> Users scan the QR code of a physical Smart Box or enter the Box ID manually (e.g. <code>box_001</code>).</li>
+            <li><strong>Control Panel:</strong> Real-time state synchronization with Firestore allowing users to:
+              <ul>
+                <li>Send command to <strong>Unlock Box</strong> (stored under <code>/commands</code> collection).</li>
+                <li><strong>Start Session</strong> (sets box state to <code>in_use</code> and registers a billing session document).</li>
+                <li><strong>Toggle Relays</strong> (EV Charger / 3-Pin Socket) individually while the session is active.</li>
+                <li><strong>Stop Session</strong> (validates safety conditions first: the physical box door must be closed/locked and the RFID card returned inside). Triggers a cost deduction from the user's digital wallet.</li>
+              </ul>
+            </li>
+            <li><strong>Digital Wallet:</strong> Wallet balance tracking and tariff pricing display (e.g. EV charger ₹12/kWh, 3-Pin socket ₹8/kWh).</li>
+          </ol>
+        </li>
+      </ul>
+    </section>
+
+    <hr>
+
+    <section>
+      <h2>🔄 Sequence Interaction Flow</h2>
+      <div class="mermaid-container">
+        <div class="mermaid">
+sequenceDiagram
+    participant Mobile as Flutter App
+    participant DB as Firestore DB
+    participant Backend as Next.js API
+    participant ESP as ESP32 Device
+
+    Mobile->>DB: Send Command (add document in 'commands')
+    ESP->>Backend: Poll for next command (GET /next-command)
+    Backend->>DB: Query pending commands
+    DB-->>Backend: Return pending command
+    Backend-->>ESP: Return actions (lock/relay instructions)
+    ESP->>ESP: Execute action (Unlock/Toggle relays)
+    ESP->>ESP: Read sensors (PZEM, RFID, lock feedback)
+    ESP->>Backend: Acknowledge & upload state (POST /ack)
+    Backend->>DB: Update commands (status=completed)
+    Backend->>DB: Update boxes (isLocked, current power, etc.)
+    Backend->>DB: Log energy_readings
+    DB-->>Mobile: Listen to box state update (real-time UI update)
+        </div>
+      </div>
+    </section>
+
+    <hr>
+
+    <section>
+      <h2>🗄️ Database Schema (Firestore)</h2>
+
+      <h3>1. <code>users</code> Collection</h3>
+      <p>Tracks user credentials, registration dates, and prepaid credits.</p>
+      <pre><code>{
+  "id": "user_uid",
+  "displayName": "John Doe",
+  "email": "john@example.com",
+  "isActive": true,
+  "walletBalance": 500.0,
+  "createdAt": "Timestamp"
+}</code></pre>
+
+      <h3>2. <code>boxes</code> Collection</h3>
+      <p>Maintains real-time status parameters of each Smart Box hardware unit.</p>
+      <pre><code>{
+  "id": "box_001",
+  "ownerUid": "user_uid_or_null",
+  "isOnline": true,
+  "isLocked": true,
+  "rfidDetected": false,
+  "status": "available", // "available" | "in_use" | "offline"
+  "devices": {
+    "evCharger": {
+      "isOn": false,
+      "voltage": 0.0,
+      "current": 0.0,
+      "power": 0.0
+    },
+    "threePinSocket": {
+      "isOn": false,
+      "voltage": 0.0,
+      "current": 0.0,
+      "power": 0.0
+    }
+  },
+  "lastUpdated": "Timestamp"
+}</code></pre>
+
+      <h3>3. <code>commands</code> Collection</h3>
+      <p>Holds transient operations sent from client apps to hardware nodes.</p>
+      <pre><code>{
+  "id": "command_document_id",
+  "boxId": "box_001",
+  "userId": "user_uid",
+  "commandType": "unlock", // "unlock" | "lock" | "deviceControl"
+  "payload": {
+    "device": "evCharger", // only for deviceControl
+    "action": "turnOn" // "turnOn" | "turnOff"
+  },
+  "status": "pending", // "pending" | "completed" | "failed"
+  "createdAt": "Timestamp",
+  "executedAt": "Timestamp",
+  "espResult": {
+    "success": true,
+    "lockState": "UNLOCKED",
+    "evOn": true,
+    "p3On": false
+  }
+}</code></pre>
+
+      <h3>4. <code>sessions</code> Collection</h3>
+      <p>Maintains billing history, session duration, and real-time charging telemetry.</p>
+      <pre><code>{
+  "id": "session_document_id",
+  "userId": "user_uid",
+  "boxId": "box_001",
+  "status": "completed", // "active" | "completed"
+  "startTime": "Timestamp",
+  "endTime": "Timestamp",
+  "duration": 3600, // seconds
+  "cost": 24.50, // total cost in ₹
+  "devices": {
+    "evCharger": {
+      "energyConsumed": 1.25, // kWh
+      "cost": 15.00 // ₹
+    },
+    "threePinSocket": {
+      "energyConsumed": 1.18, // kWh
+      "cost": 9.50 // ₹
+    }
+  }
+}</code></pre>
+
+      <h3>5. <code>energy_readings</code> Collection</h3>
+      <p>A historical log populated directly during the ESP32 acknowledgment loop, facilitating time-series graphing.</p>
+      <pre><code>{
+  "boxId": "box_001",
+  "source": "ev", // "ev" | "p3"
+  "voltage": 231.4,
+  "current": 15.8,
+  "power": 3656.1,
+  "energy": 12.45, // Cumulative lifetime reading (kWh)
+  "recordedAt": "Timestamp"
+}</code></pre>
+    </section>
+
+    <hr>
+
+    <section>
+      <h2>🔒 Security Rules Overview</h2>
+      <p>Firestore utilizes custom-configured security rules to protect user credentials and device status documents:</p>
+      <ol>
+        <li><strong>User Scope Isolation:</strong> Users can only query or update their own user documents.</li>
+        <li><strong>Ownership Enforcement:</strong> A user must be designated as the box owner (<code>ownerUid</code> matching the authenticated UID) to query or control the device.</li>
+        <li><strong>Write Isolation:</strong> Mobile users are forbidden from writing to physical device states directly (represented in <code>status</code> or <code>energy_readings</code> fields). They are limited to placing command proposals under the <code>/commands</code> path.</li>
+        <li><strong>Backend Privilege:</strong> Vercel backend processes bypass regular firestore-client rules using the authoritative Firebase Admin SDK.</li>
+      </ol>
+    </section>
+  </div>
+
+</body>
+</html>

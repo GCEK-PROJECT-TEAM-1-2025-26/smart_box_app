@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/auth_service.dart';
-import 'dashboard_screen.dart';
+import 'box_selection_screen.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -40,7 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const DashboardScreen()),
+          MaterialPageRoute(builder: (_) => const BoxSelectionScreen()),
         );
       }
     } catch (e) {
@@ -69,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (result != null && mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const DashboardScreen()),
+          MaterialPageRoute(builder: (_) => const BoxSelectionScreen()),
         );
       }
     } catch (e) {
@@ -102,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: AppTheme.surfaceDark,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           title: Text(
             'Google Sign-In Setup Required',
             style: AppTheme.headingSmall,
@@ -138,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundDark,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -157,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     padding: const EdgeInsets.all(AppTheme.spacingLarge),
                     decoration: BoxDecoration(
-                      color: AppTheme.surfaceDark,
+                      color: Theme.of(context).colorScheme.surface,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -188,6 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     keyboardType: TextInputType.emailAddress,
                     style: AppTheme.bodyLarge,
                     decoration: AppTheme.inputDecoration(
+                      context,
                       labelText: 'Email',
                       prefixIcon: Icons.email_outlined,
                     ),
@@ -211,6 +212,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     obscureText: _obscurePassword,
                     style: AppTheme.bodyLarge,
                     decoration: AppTheme.inputDecoration(
+                      context,
                       labelText: 'Password',
                       prefixIcon: Icons.lock_outline,
                       suffixIcon: IconButton(
@@ -218,7 +220,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           _obscurePassword
                               ? Icons.visibility
                               : Icons.visibility_off,
-                          color: AppTheme.textHint,
+                          color: Theme.of(context).hintColor,
                         ),
                         onPressed: () {
                           setState(() {
@@ -250,7 +252,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               height: 20,
                               width: 20,
                               child: CircularProgressIndicator(
-                                color: AppTheme.textPrimary,
+                                color: Colors.white,
                                 strokeWidth: 2,
                               ),
                             )
@@ -260,14 +262,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: AppTheme.spacingLarge), // Divider
                   Row(
                     children: [
-                      Expanded(child: Divider(color: AppTheme.divider)),
+                      const Expanded(child: Divider()),
                       Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppTheme.spacingMedium,
                         ),
                         child: Text('OR', style: AppTheme.bodyMedium),
                       ),
-                      Expanded(child: Divider(color: AppTheme.divider)),
+                      const Expanded(child: Divider()),
                     ],
                   ),
                   const SizedBox(height: AppTheme.spacingLarge),

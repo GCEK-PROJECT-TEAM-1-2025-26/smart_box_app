@@ -10,6 +10,9 @@ import '../services/box_service.dart';
 import '../theme/app_theme.dart';
 import 'dashboard_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'owner_dashboard_screen.dart';
+import 'profile_screen.dart';
+
 
 class BoxSelectionScreen extends StatefulWidget {
   const BoxSelectionScreen({super.key});
@@ -25,14 +28,34 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
   bool _isLoading = false;
   Position? _currentPosition;
   String? _scannedBoxId;
+
   List<Map<String, dynamic>> _boxes = [];
+  String? _ownedBoxId;
+
 
   @override
   void initState() {
     super.initState();
 
+
     _loadBoxes();
     _getCurrentLocation();
+
+    _checkOwnedBox();
+  }
+
+  Future<void> _checkOwnedBox() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final boxService = BoxService();
+      final ownedBox = await boxService.getOwnedBox(user.uid);
+      if (ownedBox != null && mounted) {
+        setState(() {
+          _ownedBoxId = ownedBox.boxId;
+        });
+      }
+    }
+
   }
 
   @override
@@ -68,29 +91,70 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
 
     try {
       final boxService = BoxService();
-      final isValid = await boxService.validateBoxId(boxId);
+      final accessResult = await boxService.checkBoxAccessibility(boxId);
 
-      if (isValid) {
-        if (mounted) {
+      if (!mounted) return;
+
+      switch (accessResult) {
+        case 'ok':
+          // Box is locked and has no active session — allow access
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (context) => DashboardScreen(boxId: boxId),
             ),
           );
-        }
-      } else {
-        if (mounted) {
+          break;
+
+        case 'not_found':
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Box ID not found or invalid'),
+              content: Text('Box ID not found. Please check and try again.'),
               backgroundColor: AppTheme.error,
             ),
           );
           setState(() => _scannedBoxId = null);
-          if (_isScanning) {
-            mobileScannerController?.start();
-          }
-        }
+          if (_isScanning) mobileScannerController?.start();
+          break;
+
+        case 'unlocked':
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'This box is currently open (unlocked). '
+                'Access is only allowed when the box is securely locked.',
+              ),
+              backgroundColor: AppTheme.warning,
+              duration: Duration(seconds: 4),
+            ),
+          );
+          setState(() => _scannedBoxId = null);
+          if (_isScanning) mobileScannerController?.start();
+          break;
+
+        case 'in_use':
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'This box is currently in use. '
+                'Please try again when the session has ended.',
+              ),
+              backgroundColor: AppTheme.error,
+              duration: Duration(seconds: 4),
+            ),
+          );
+          setState(() => _scannedBoxId = null);
+          if (_isScanning) mobileScannerController?.start();
+          break;
+
+        default:
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Unable to access box. Please try again.'),
+              backgroundColor: AppTheme.error,
+            ),
+          );
+          setState(() => _scannedBoxId = null);
+          if (_isScanning) mobileScannerController?.start();
       }
     } catch (e) {
       if (mounted) {
@@ -162,11 +226,23 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppTheme.backgroundDark,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         title: const Text('Select Smart Box'),
         elevation: 0,
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ProfileScreen(),
+                ),
+              );
+            },
+            tooltip: 'Profile',
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: _logout,
@@ -174,7 +250,7 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
           ),
         ],
       ),
-      backgroundColor: AppTheme.backgroundDark,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: _isScanning ? _buildQRScanner() : _buildManualEntry(),
     );
   }
@@ -251,7 +327,7 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceDark,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
@@ -288,13 +364,40 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[700]!),
+                    borderSide: BorderSide(color: Theme.of(context).dividerColor),
                   ),
                   filled: true,
-                  fillColor: AppTheme.surfaceDark,
+                  fillColor: Theme.of(context).colorScheme.surface,
                 ),
                 textCapitalization: TextCapitalization.none,
               ),
+              if (_ownedBoxId != null) ...[
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.success,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: _isLoading
+                        ? null
+                        : () {
+                            Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(
+                                builder: (context) => OwnerDashboardScreen(boxId: _ownedBoxId!),
+                              ),
+                            );
+                          },
+                    icon: const Icon(Icons.vpn_key, color: Colors.white),
+                    label: Text('Access My Owned Box ($_ownedBoxId)'),
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,

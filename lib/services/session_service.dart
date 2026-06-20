@@ -167,4 +167,80 @@ class SessionService {
 
     return (evData.totalUsage * evRate) + (socketData.totalUsage * socketRate);
   }
+
+  // Get recent sessions for a specific box
+  Stream<List<SessionModel>> getBoxSessions(String boxId) {
+    return _firestore
+        .collection(_sessionsCollection)
+        .where('boxId', isEqualTo: boxId)
+        .orderBy('startTime', descending: true)
+        .limit(10)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map((doc) => SessionModel.fromFirestore(doc.data(), doc.id))
+              .toList();
+        });
+  }
+
+  // Get active session for a specific box
+  Stream<SessionModel?> getActiveSessionForBox(String boxId) {
+    return _firestore
+        .collection(_sessionsCollection)
+        .where('boxId', isEqualTo: boxId)
+        .where('isActive', isEqualTo: true)
+        .limit(1)
+        .snapshots()
+        .map((snapshot) {
+          if (snapshot.docs.isNotEmpty) {
+            final doc = snapshot.docs.first;
+            return SessionModel.fromFirestore(doc.data(), doc.id);
+          }
+          return null;
+        });
+  }
+
+  // Get box total revenue
+  Stream<double> getBoxTotalRevenue(String boxId) {
+    return _firestore
+        .collection(_sessionsCollection)
+        .where('boxId', isEqualTo: boxId)
+        .snapshots()
+        .map((snapshot) {
+          double total = 0.0;
+          for (var doc in snapshot.docs) {
+            total += (doc.data()['totalCost'] ?? 0.0).toDouble();
+          }
+          return total;
+        });
+  }
+
+  // Force stop an active session on a box
+  Future<void> forceStopSession(String sessionId, String boxId) async {
+    try {
+      final batch = _firestore.batch();
+
+      // 1. Mark session as completed / force stopped
+      final sessionRef = _firestore.collection(_sessionsCollection).doc(sessionId);
+      batch.update(sessionRef, {
+        'endTime': FieldValue.serverTimestamp(),
+        'isActive': false,
+        'status': 'force_stopped',
+      });
+
+      // 2. Reset box states (available, locked, relays OFF)
+      final boxRef = _firestore.collection('boxes').doc(boxId);
+      batch.update(boxRef, {
+        'status': 'available',
+        'isLocked': true,
+        'devices.evCharger.isOn': false,
+        'devices.threePinSocket.isOn': false,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
+
+      await batch.commit();
+    } catch (e) {
+      throw Exception('Failed to force stop session: $e');
+    }
+  }
 }

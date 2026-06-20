@@ -6,6 +6,7 @@ import 'screens/login_screen.dart';
 import 'screens/box_selection_screen.dart';
 import 'screens/email_verification_screen.dart';
 import 'theme/app_theme.dart';
+import 'theme/theme_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,11 +18,18 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Smart Box App',
-      theme: AppTheme.themeData,
-      home: const AuthWrapper(),
+    return ListenableBuilder(
+      listenable: ThemeManager.instance,
+      builder: (context, child) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'WattGate',
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: ThemeManager.instance.themeMode,
+          home: const AuthWrapper(),
+        );
+      },
     );
   }
 }

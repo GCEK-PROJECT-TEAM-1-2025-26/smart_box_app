@@ -9,6 +9,7 @@ class BoxModel {
   final DeviceStatus threePinSocket;
   final DateTime lastUpdated;
   final String status;
+  final String? ownerId;
 
   BoxModel({
     required this.boxId,
@@ -19,6 +20,7 @@ class BoxModel {
     required this.threePinSocket,
     required this.lastUpdated,
     required this.status,
+    this.ownerId,
   });
 
   factory BoxModel.fromFirestore(Map<String, dynamic> data) {
@@ -34,11 +36,12 @@ class BoxModel {
       lastUpdated:
           (data['lastUpdated'] as Timestamp?)?.toDate() ?? DateTime.now(),
       status: data['status'] ?? 'available',
+      ownerId: data['ownerId'],
     );
   }
 
   Map<String, dynamic> toFirestore() {
-    return {
+    final data = <String, dynamic>{
       'boxId': boxId,
       'location': location,
       'isLocked': isLocked,
@@ -50,6 +53,10 @@ class BoxModel {
       'lastUpdated': Timestamp.fromDate(lastUpdated),
       'status': status,
     };
+    if (ownerId != null) {
+      data['ownerId'] = ownerId;
+    }
+    return data;
   }
 
   BoxModel copyWith({
@@ -61,6 +68,7 @@ class BoxModel {
     DeviceStatus? threePinSocket,
     DateTime? lastUpdated,
     String? status,
+    String? ownerId,
   }) {
     return BoxModel(
       boxId: boxId ?? this.boxId,
@@ -71,6 +79,7 @@ class BoxModel {
       threePinSocket: threePinSocket ?? this.threePinSocket,
       lastUpdated: lastUpdated ?? this.lastUpdated,
       status: status ?? this.status,
+      ownerId: ownerId ?? this.ownerId,
     );
   }
 }

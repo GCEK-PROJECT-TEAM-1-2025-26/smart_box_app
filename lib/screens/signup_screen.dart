@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
-import 'dashboard_screen.dart';
+import 'box_selection_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -85,7 +85,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (result != null && mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const DashboardScreen()),
+          MaterialPageRoute(builder: (_) => const BoxSelectionScreen()),
         );
       }
     } catch (e) {
@@ -108,7 +108,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundDark,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -126,9 +126,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.arrow_back_ios,
-                          color: AppTheme.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ],
@@ -139,7 +139,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   Container(
                     padding: const EdgeInsets.all(AppTheme.spacingLarge),
                     decoration: BoxDecoration(
-                      color: AppTheme.surfaceDark,
+                      color: Theme.of(context).colorScheme.surface,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -170,6 +170,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     textCapitalization: TextCapitalization.words,
                     style: AppTheme.bodyLarge,
                     decoration: AppTheme.inputDecoration(
+                      context,
                       labelText: 'Full Name',
                       prefixIcon: Icons.person_outline,
                     ),
@@ -191,6 +192,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     keyboardType: TextInputType.emailAddress,
                     style: AppTheme.bodyLarge,
                     decoration: AppTheme.inputDecoration(
+                      context,
                       labelText: 'Email',
                       prefixIcon: Icons.email_outlined,
                     ),
@@ -214,6 +216,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     obscureText: _obscurePassword,
                     style: AppTheme.bodyLarge,
                     decoration: AppTheme.inputDecoration(
+                      context,
                       labelText: 'Password',
                       prefixIcon: Icons.lock_outline,
                       suffixIcon: IconButton(
@@ -221,7 +224,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           _obscurePassword
                               ? Icons.visibility
                               : Icons.visibility_off,
-                          color: AppTheme.textHint,
+                          color: Theme.of(context).hintColor,
                         ),
                         onPressed: () {
                           setState(() {
@@ -248,6 +251,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     obscureText: _obscureConfirmPassword,
                     style: AppTheme.bodyLarge,
                     decoration: AppTheme.inputDecoration(
+                      context,
                       labelText: 'Confirm Password',
                       prefixIcon: Icons.lock_outline,
                       suffixIcon: IconButton(
@@ -255,7 +259,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           _obscureConfirmPassword
                               ? Icons.visibility
                               : Icons.visibility_off,
-                          color: AppTheme.textHint,
+                          color: Theme.of(context).hintColor,
                         ),
                         onPressed: () {
                           setState(() {
@@ -287,7 +291,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               height: 20,
                               width: 20,
                               child: CircularProgressIndicator(
-                                color: AppTheme.textPrimary,
+                                color: Colors.white,
                                 strokeWidth: 2,
                               ),
                             )
@@ -297,14 +301,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   const SizedBox(height: AppTheme.spacingLarge), // Divider
                   Row(
                     children: [
-                      Expanded(child: Divider(color: AppTheme.divider)),
+                      const Expanded(child: Divider()),
                       Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppTheme.spacingMedium,
                         ),
                         child: Text('OR', style: AppTheme.bodyMedium),
                       ),
-                      Expanded(child: Divider(color: AppTheme.divider)),
+                      const Expanded(child: Divider()),
                     ],
                   ),
                   const SizedBox(height: AppTheme.spacingLarge),
