@@ -74,29 +74,70 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
 
     try {
       final boxService = BoxService();
-      final isValid = await boxService.validateBoxId(boxId);
+      final accessResult = await boxService.checkBoxAccessibility(boxId);
 
-      if (isValid) {
-        if (mounted) {
+      if (!mounted) return;
+
+      switch (accessResult) {
+        case 'ok':
+          // Box is locked and has no active session — allow access
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (context) => DashboardScreen(boxId: boxId),
             ),
           );
-        }
-      } else {
-        if (mounted) {
+          break;
+
+        case 'not_found':
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Box ID not found or invalid'),
+              content: Text('Box ID not found. Please check and try again.'),
               backgroundColor: AppTheme.error,
             ),
           );
           setState(() => _scannedBoxId = null);
-          if (_isScanning) {
-            mobileScannerController?.start();
-          }
-        }
+          if (_isScanning) mobileScannerController?.start();
+          break;
+
+        case 'unlocked':
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'This box is currently open (unlocked). '
+                'Access is only allowed when the box is securely locked.',
+              ),
+              backgroundColor: AppTheme.warning,
+              duration: Duration(seconds: 4),
+            ),
+          );
+          setState(() => _scannedBoxId = null);
+          if (_isScanning) mobileScannerController?.start();
+          break;
+
+        case 'in_use':
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'This box is currently in use. '
+                'Please try again when the session has ended.',
+              ),
+              backgroundColor: AppTheme.error,
+              duration: Duration(seconds: 4),
+            ),
+          );
+          setState(() => _scannedBoxId = null);
+          if (_isScanning) mobileScannerController?.start();
+          break;
+
+        default:
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Unable to access box. Please try again.'),
+              backgroundColor: AppTheme.error,
+            ),
+          );
+          setState(() => _scannedBoxId = null);
+          if (_isScanning) mobileScannerController?.start();
       }
     } catch (e) {
       if (mounted) {

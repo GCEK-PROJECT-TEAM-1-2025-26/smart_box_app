@@ -23,6 +23,36 @@ class BoxService {
     }
   }
 
+  /// Check if a box can be accessed by a user.
+  /// Returns 'ok' if accessible, or a reason string if not.
+  ///
+  /// Access is ONLY allowed when:
+  ///   - Box exists
+  ///   - isLocked == true  (physically secured)
+  ///   - status != 'in_use' (no active session)
+  Future<String> checkBoxAccessibility(String boxId) async {
+    try {
+      final boxDoc = await _firestore
+          .collection(_boxCollection)
+          .doc(boxId)
+          .get();
+
+      if (!boxDoc.exists) return 'not_found';
+
+      final data = boxDoc.data()!;
+      final isLocked = data['isLocked'] as bool? ?? true;
+      final status = data['status'] as String? ?? 'available';
+
+      if (!isLocked) return 'unlocked';        // Box is physically open
+      if (status == 'in_use') return 'in_use'; // Someone has an active session
+
+      return 'ok';
+    } catch (e) {
+      print('Error checking box accessibility: $e');
+      return 'error';
+    }
+  }
+
   /// Get box owned by the user (returns the first matching box model, if any)
   Future<BoxModel?> getOwnedBox(String userId) async {
     try {
