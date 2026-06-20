@@ -41,7 +41,7 @@ class BoxModel {
   }
 
   Map<String, dynamic> toFirestore() {
-    return {
+    final data = <String, dynamic>{
       'boxId': boxId,
       'location': location,
       'isLocked': isLocked,
@@ -52,8 +52,11 @@ class BoxModel {
       },
       'lastUpdated': Timestamp.fromDate(lastUpdated),
       'status': status,
-      'ownerId': ownerId,
     };
+    if (ownerId != null) {
+      data['ownerId'] = ownerId;
+    }
+    return data;
   }
 
   BoxModel copyWith({
