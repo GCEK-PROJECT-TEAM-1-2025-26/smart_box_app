@@ -3,7 +3,7 @@ import 'dart:async';
 import '../services/auth_service.dart';
 import '../services/user_service.dart';
 import '../theme/app_theme.dart';
-import 'dashboard_screen.dart';
+import 'box_selection_screen.dart';
 import 'login_screen.dart';
 
 class EmailVerificationScreen extends StatefulWidget {
@@ -53,7 +53,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
           }
 
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const DashboardScreen()),
+            MaterialPageRoute(builder: (context) => const BoxSelectionScreen()),
           );
         }
       }

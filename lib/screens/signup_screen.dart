@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
-import 'dashboard_screen.dart';
+import 'box_selection_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -85,7 +85,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (result != null && mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const DashboardScreen()),
+          MaterialPageRoute(builder: (_) => const BoxSelectionScreen()),
         );
       }
     } catch (e) {
