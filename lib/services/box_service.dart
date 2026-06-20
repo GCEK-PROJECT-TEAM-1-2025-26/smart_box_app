@@ -29,9 +29,11 @@ class BoxService {
 
       return snapshot.docs.map((doc) {
         return {
-          'boxId': doc.id,
+          'boxId': doc['boxId'],
           'latitude': doc['latitude'],
           'longitude': doc['longitude'],
+          'location': doc['location'],
+          'status': doc['status'],
         };
       }).toList();
     } catch (e) {

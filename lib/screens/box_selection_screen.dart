@@ -1,3 +1,7 @@
+import 'box_map_screen.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -19,13 +23,16 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
   MobileScannerController? mobileScannerController;
   bool _isScanning = false;
   bool _isLoading = false;
+  Position? _currentPosition;
   String? _scannedBoxId;
   List<Map<String, dynamic>> _boxes = [];
 
   @override
   void initState() {
     super.initState();
+
     _loadBoxes();
+    _getCurrentLocation();
   }
 
   @override
@@ -113,6 +120,28 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
         _boxes = boxes;
       });
     }
+  }
+
+  Future<void> _getCurrentLocation() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+
+    if (!serviceEnabled) {
+      return;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      return;
+    }
+
+    _currentPosition = await Geolocator.getCurrentPosition();
+
+    setState(() {});
   }
 
   Future<void> _openGoogleMaps(double latitude, double longitude) async {
@@ -324,33 +353,79 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
                 child: Text('Nearby Smart Boxes', style: AppTheme.headingSmall),
               ),
               const SizedBox(height: 16),
-              Column(
-                children: _boxes.map((box) {
-                  return Card(
-                    color: AppTheme.surfaceDark,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    child: ListTile(
-                      leading: const Icon(
-                        Icons.location_on,
-                        color: Colors.green,
-                      ),
-                      title: Text(box['boxId'], style: AppTheme.bodyMedium),
-                      subtitle: Text(
-                        'Smart Box Location',
-                        style: AppTheme.bodySmall,
-                      ),
-                      trailing: ElevatedButton(
-                        onPressed: () {
-                          _openGoogleMaps(
-                            (box['latitude'] as num).toDouble(),
-                            (box['longitude'] as num).toDouble(),
-                          );
-                        },
-                        child: const Text('Navigate'),
+              SizedBox(
+                height: 220,
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: FlutterMap(
+                        options: MapOptions(
+                          initialCenter: LatLng(
+                            _currentPosition!.latitude,
+                            _currentPosition!.longitude,
+                          ),
+                          initialZoom: 14,
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate:
+                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.example.smart_box_app',
+                          ),
+                          MarkerLayer(
+                            markers: [
+                              Marker(
+                                point: LatLng(
+                                  _currentPosition!.latitude,
+                                  _currentPosition!.longitude,
+                                ),
+                                width: 40,
+                                height: 40,
+                                child: const Icon(
+                                  Icons.person_pin_circle,
+                                  color: Colors.blue,
+                                  size: 40,
+                                ),
+                              ),
+                              ..._boxes.map((box) {
+                                return Marker(
+                                  point: LatLng(
+                                    (box['latitude'] as num).toDouble(),
+                                    (box['longitude'] as num).toDouble(),
+                                  ),
+                                  width: 40,
+                                  height: 40,
+                                  child: const Icon(
+                                    Icons.ev_station,
+                                    color: Colors.green,
+                                    size: 40,
+                                  ),
+                                );
+                              }),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                  );
-                }).toList(),
+
+                    Positioned.fill(
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const BoxMapScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
