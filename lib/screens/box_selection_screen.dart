@@ -6,6 +6,7 @@ import '../services/box_service.dart';
 import '../theme/app_theme.dart';
 import 'dashboard_screen.dart';
 import 'owner_dashboard_screen.dart';
+import 'profile_screen.dart';
 
 class BoxSelectionScreen extends StatefulWidget {
   const BoxSelectionScreen({super.key});
@@ -125,6 +126,18 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
         elevation: 0,
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ProfileScreen(),
+                ),
+              );
+            },
+            tooltip: 'Profile',
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: _logout,
