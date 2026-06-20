@@ -456,80 +456,99 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
                 child: Text('Nearby Smart Boxes', style: AppTheme.headingSmall),
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                height: 220,
-                child: Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: FlutterMap(
-                        options: MapOptions(
-                          initialCenter: LatLng(
-                            _currentPosition!.latitude,
-                            _currentPosition!.longitude,
+              if (_currentPosition == null)
+                Container(
+                  height: 220,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 12),
+                        Text('Getting your location...'),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                SizedBox(
+                  height: 220,
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: FlutterMap(
+                          options: MapOptions(
+                            initialCenter: LatLng(
+                              _currentPosition!.latitude,
+                              _currentPosition!.longitude,
+                            ),
+                            initialZoom: 14,
                           ),
-                          initialZoom: 14,
-                        ),
-                        children: [
-                          TileLayer(
-                            urlTemplate:
-                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            userAgentPackageName: 'com.example.smart_box_app',
-                          ),
-                          MarkerLayer(
-                            markers: [
-                              Marker(
-                                point: LatLng(
-                                  _currentPosition!.latitude,
-                                  _currentPosition!.longitude,
-                                ),
-                                width: 40,
-                                height: 40,
-                                child: const Icon(
-                                  Icons.person_pin_circle,
-                                  color: Colors.blue,
-                                  size: 40,
-                                ),
-                              ),
-                              ..._boxes.map((box) {
-                                return Marker(
+                          children: [
+                            TileLayer(
+                              urlTemplate:
+                                  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                              userAgentPackageName: 'com.example.smart_box_app',
+                            ),
+                            MarkerLayer(
+                              markers: [
+                                Marker(
                                   point: LatLng(
-                                    (box['latitude'] as num).toDouble(),
-                                    (box['longitude'] as num).toDouble(),
+                                    _currentPosition!.latitude,
+                                    _currentPosition!.longitude,
                                   ),
                                   width: 40,
                                   height: 40,
                                   child: const Icon(
-                                    Icons.ev_station,
-                                    color: Colors.green,
+                                    Icons.person_pin_circle,
+                                    color: Colors.blue,
                                     size: 40,
                                   ),
-                                );
-                              }),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    Positioned.fill(
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const BoxMapScreen(),
-                              ),
-                            );
-                          },
+                                ),
+                                ..._boxes.map((box) {
+                                  return Marker(
+                                    point: LatLng(
+                                      (box['latitude'] as num).toDouble(),
+                                      (box['longitude'] as num).toDouble(),
+                                    ),
+                                    width: 40,
+                                    height: 40,
+                                    child: const Icon(
+                                      Icons.ev_station,
+                                      color: Colors.green,
+                                      size: 40,
+                                    ),
+                                  );
+                                }),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+
+                      Positioned.fill(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const BoxMapScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
             ],
           ),
         ),

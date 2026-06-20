@@ -24,22 +24,28 @@ class BoxService {
   }
 
 
+  /// Fetch all boxes with their location data for the map view
   Future<List<Map<String, dynamic>>> getAllBoxes() async {
     try {
       final snapshot = await _firestore.collection(_boxCollection).get();
 
       return snapshot.docs.map((doc) {
+        final data = doc.data();
         return {
-          'boxId': doc['boxId'],
-          'latitude': doc['latitude'],
-          'longitude': doc['longitude'],
-          'location': doc['location'],
-          'status': doc['status'],
+          'boxId': data['boxId'] ?? doc.id,
+          'latitude': data['latitude'],
+          'longitude': data['longitude'],
+          'location': data['location'] ?? '',
+          'status': data['status'] ?? 'available',
         };
-      }).toList();
+      }).where((box) =>
+        box['latitude'] != null && box['longitude'] != null
+      ).toList();
     } catch (e) {
       print('Error fetching all boxes: $e');
       return [];
+    }
+  }
 
   /// Check if a box can be accessed by a user.
   /// Returns 'ok' if accessible, or a reason string if not.
