@@ -12,6 +12,7 @@ import 'dashboard_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'owner_dashboard_screen.dart';
 import 'profile_screen.dart';
+import 'box_provisioning_screen.dart';
 
 
 class BoxSelectionScreen extends StatefulWidget {
@@ -231,6 +232,18 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
         elevation: 0,
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.wifi_protected_setup),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const BoxProvisioningScreen(),
+                ),
+              );
+            },
+            tooltip: 'Provision Box',
+          ),
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {
