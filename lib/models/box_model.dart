@@ -10,6 +10,7 @@ class BoxModel {
   final DateTime lastUpdated;
   final String status;
   final String? ownerId;
+  final Map<String, dynamic> tariff;
 
   BoxModel({
     required this.boxId,
@@ -20,6 +21,7 @@ class BoxModel {
     required this.threePinSocket,
     required this.lastUpdated,
     required this.status,
+    required this.tariff,
     this.ownerId,
   });
 
@@ -37,6 +39,7 @@ class BoxModel {
           (data['lastUpdated'] as Timestamp?)?.toDate() ?? DateTime.now(),
       status: data['status'] ?? 'available',
       ownerId: data['ownerId'],
+      tariff: data['tariff'] ?? {'evRate': 12.0, 'socketRate': 8.0},
     );
   }
 
@@ -52,6 +55,7 @@ class BoxModel {
       },
       'lastUpdated': Timestamp.fromDate(lastUpdated),
       'status': status,
+      'tariff': tariff,
     };
     if (ownerId != null) {
       data['ownerId'] = ownerId;
@@ -69,6 +73,7 @@ class BoxModel {
     DateTime? lastUpdated,
     String? status,
     String? ownerId,
+    Map<String, dynamic>? tariff,
   }) {
     return BoxModel(
       boxId: boxId ?? this.boxId,
@@ -80,6 +85,7 @@ class BoxModel {
       lastUpdated: lastUpdated ?? this.lastUpdated,
       status: status ?? this.status,
       ownerId: ownerId ?? this.ownerId,
+      tariff: tariff ?? this.tariff,
     );
   }
 }

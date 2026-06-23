@@ -177,6 +177,93 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
     );
   }
 
+  Future<void> _showEditTariffDialog() async {
+    if (_currentBox == null) return;
+
+    final evRateController = TextEditingController(
+      text: (_currentBox!.tariff['evRate'] ?? 12.0).toString(),
+    );
+    final socketRateController = TextEditingController(
+      text: (_currentBox!.tariff['socketRate'] ?? 8.0).toString(),
+    );
+
+    final formKey = GlobalKey<FormState>();
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Box Tariff'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: evRateController,
+                decoration: const InputDecoration(
+                  labelText: 'EV Charger Rate (₹/kWh)',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.electric_car),
+                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                validator: (val) {
+                  if (val == null || val.isEmpty) return 'Required';
+                  if (double.tryParse(val) == null) return 'Invalid number';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: socketRateController,
+                decoration: const InputDecoration(
+                  labelText: '3-Pin Socket Rate (₹/kWh)',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.electrical_services),
+                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                validator: (val) {
+                  if (val == null || val.isEmpty) return 'Required';
+                  if (double.tryParse(val) == null) return 'Invalid number';
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                final evRate = double.parse(evRateController.text);
+                final socketRate = double.parse(socketRateController.text);
+                try {
+                  await _boxService.updateBoxTariff(
+                    widget.boxId,
+                    evRate,
+                    socketRate,
+                  );
+                  if (mounted) {
+                    Navigator.pop(context);
+                    _showSnackBar('Tariff updated successfully', AppTheme.success);
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    _showSnackBar('Failed to update tariff', AppTheme.error);
+                  }
+                }
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -261,14 +348,43 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                             children: [
                               Icon(Icons.location_on, size: 16, color: theme.colorScheme.onSurfaceVariant),
                               const SizedBox(width: 4),
-                              Text(
-                                _currentBox!.location,
-                                style: AppTheme.bodyMedium,
+                              Expanded(
+                                child: Text(
+                                  _currentBox!.location,
+                                  style: AppTheme.bodyMedium,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          const Divider(),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Tariff Rates', style: AppTheme.headingSmall.copyWith(fontWeight: FontWeight.bold)),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'EV: ₹${_currentBox!.tariff['evRate'] ?? 12.0}/kWh • Socket: ₹${_currentBox!.tariff['socketRate'] ?? 8.0}/kWh',
+                                      style: AppTheme.bodyMedium,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.edit, color: AppTheme.primaryBlue),
+                                onPressed: _showEditTariffDialog,
+                                tooltip: 'Edit Tariff',
                               ),
                             ],
                           ),
                         ],
                       ),
+
                     ),
                     const SizedBox(height: AppTheme.spacingLarge),
 

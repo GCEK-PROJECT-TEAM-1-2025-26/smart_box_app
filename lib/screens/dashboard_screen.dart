@@ -52,8 +52,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   double _walletBalance = 500.0; // Default initial value
 
   // Tariff rates
-  static const double evRate = 12.0; // ₹12 per kWh
-  static const double socketRate = 8.0; // ₹8 per kWh  @override
+  double get evRate => (_currentBox?.tariff['evRate'] as num?)?.toDouble() ?? 12.0;
+  double get socketRate => (_currentBox?.tariff['socketRate'] as num?)?.toDouble() ?? 8.0;
+
+  @override
   void initState() {
     super.initState();
     _currentBoxId = widget.boxId ?? 'box_001';

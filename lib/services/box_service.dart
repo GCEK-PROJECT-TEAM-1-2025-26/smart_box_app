@@ -164,6 +164,22 @@ class BoxService {
     }
   }
 
+  // Update box tariff
+  Future<void> updateBoxTariff(
+    String boxId,
+    double evRate,
+    double socketRate,
+  ) async {
+    try {
+      await _firestore.collection(_boxCollection).doc(boxId).update({
+        'tariff': {'evRate': evRate, 'socketRate': socketRate},
+        'lastUpdated': Timestamp.now(),
+      });
+    } catch (e) {
+      throw Exception('Failed to update tariff: $e');
+    }
+  }
+
   // Update RFID status
   Future<void> updateRfidStatus(bool rfidDetected, [String? boxId]) async {
     try {
@@ -227,6 +243,7 @@ class BoxService {
         ),
         lastUpdated: DateTime.now(),
         status: 'available',
+        tariff: {'evRate': 12.0, 'socketRate': 8.0},
       );
 
       // Use merge: true to preserve ESP32 updates, but ensure all fields exist

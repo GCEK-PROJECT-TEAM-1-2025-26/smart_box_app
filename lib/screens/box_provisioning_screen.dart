@@ -21,6 +21,8 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
   final TextEditingController _boxIdController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _secretController = TextEditingController(text: 'super-secret-token');
+  final TextEditingController _evRateController = TextEditingController(text: '12.0');
+  final TextEditingController _socketRateController = TextEditingController(text: '8.0');
 
   List<String> _scannedSSIDs = [];
   String? _selectedSSID;
@@ -45,6 +47,8 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
     _boxIdController.dispose();
     _locationController.dispose();
     _secretController.dispose();
+    _evRateController.dispose();
+    _socketRateController.dispose();
     super.dispose();
   }
 
@@ -183,6 +187,10 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
           'latitude': lat ?? 10.0, // fallback coordinates if parsing failed
           'longitude': lng ?? 76.0,
           'status': 'available',
+          'tariff': {
+            'evRate': double.tryParse(_evRateController.text) ?? 12.0,
+            'socketRate': double.tryParse(_socketRateController.text) ?? 8.0,
+          },
           'isLocked': true,
           'rfidDetected': true,
           'devices': {
@@ -386,6 +394,40 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
                       if (value.contains(' ')) {
                         return 'Box ID must not contain spaces';
                       }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppTheme.spacingMedium),
+
+                  // EV Rate Field
+                  TextFormField(
+                    controller: _evRateController,
+                    decoration: AppTheme.inputDecoration(
+                      context,
+                      labelText: 'EV Charger Rate (₹/kWh)',
+                      prefixIcon: Icons.electric_car,
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return 'Required';
+                      if (double.tryParse(value) == null) return 'Invalid number';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppTheme.spacingMedium),
+
+                  // Socket Rate Field
+                  TextFormField(
+                    controller: _socketRateController,
+                    decoration: AppTheme.inputDecoration(
+                      context,
+                      labelText: '3-Pin Socket Rate (₹/kWh)',
+                      prefixIcon: Icons.electrical_services,
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return 'Required';
+                      if (double.tryParse(value) == null) return 'Invalid number';
                       return null;
                     },
                   ),

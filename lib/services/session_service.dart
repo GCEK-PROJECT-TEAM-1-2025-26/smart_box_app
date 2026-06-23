@@ -160,11 +160,9 @@ class SessionService {
   double calculateSessionCost(
     SessionDeviceData evData,
     SessionDeviceData socketData,
+    double evRate,
+    double socketRate,
   ) {
-    // Define pricing (can be moved to a config file later)
-    const double evRate = 12.0; // ₹12 per kWh for EV
-    const double socketRate = 8.0; // ₹8 per kWh for 3-pin socket
-
     return (evData.totalUsage * evRate) + (socketData.totalUsage * socketRate);
   }
 
