@@ -97,6 +97,23 @@ class BoxService {
     }
   }
 
+  /// Get ALL boxes owned by the user (supports multiple owned boxes)
+  Future<List<BoxModel>> getOwnedBoxes(String userId) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(_boxCollection)
+          .where('ownerId', isEqualTo: userId)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => BoxModel.fromFirestore(doc.data()))
+          .toList();
+    } catch (e) {
+      print('Error querying owned boxes: $e');
+      return [];
+    }
+  }
+
   // Get box status stream
   Stream<BoxModel?> getBoxStatus([String? boxId]) {
     final id = boxId ?? _defaultBoxId;

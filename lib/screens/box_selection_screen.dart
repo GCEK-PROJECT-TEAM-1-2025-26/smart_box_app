@@ -6,6 +6,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/box_service.dart';
+import '../models/box_model.dart';
 import '../theme/app_theme.dart';
 import 'dashboard_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -30,7 +31,7 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
   String? _scannedBoxId;
 
   List<Map<String, dynamic>> _boxes = [];
-  String? _ownedBoxId;
+  List<BoxModel> _ownedBoxes = [];
 
 
   @override
@@ -48,14 +49,13 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final boxService = BoxService();
-      final ownedBox = await boxService.getOwnedBox(user.uid);
-      if (ownedBox != null && mounted) {
+      final ownedBoxes = await boxService.getOwnedBoxes(user.uid);
+      if (mounted) {
         setState(() {
-          _ownedBoxId = ownedBox.boxId;
+          _ownedBoxes = ownedBoxes;
         });
       }
     }
-
   }
 
   @override
@@ -383,32 +383,86 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
                 ),
                 textCapitalization: TextCapitalization.none,
               ),
-              if (_ownedBoxId != null) ...[
+              if (_ownedBoxes.isNotEmpty) ...[
                 const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.success,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onPressed: _isLoading
-                        ? null
-                        : () {
-                            Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(
-                                builder: (context) => OwnerDashboardScreen(boxId: _ownedBoxId!),
-                              ),
-                            );
-                          },
-                    icon: const Icon(Icons.vpn_key, color: Colors.white),
-                    label: Text('Access My Owned Box ($_ownedBoxId)'),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    _ownedBoxes.length == 1 ? 'My Owned Box' : 'My Owned Boxes',
+                    style: AppTheme.headingSmall.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
+                const SizedBox(height: 10),
+                ..._ownedBoxes.map((box) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.success,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        alignment: Alignment.centerLeft,
+                      ),
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      OwnerDashboardScreen(boxId: box.boxId),
+                                ),
+                              );
+                            },
+                      child: Row(
+                        children: [
+                          const Icon(Icons.vpn_key, color: Colors.white, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  box.boxId.toUpperCase(),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                Text(
+                                  box.location,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.white70,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.white24,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              box.status.toUpperCase(),
+                              style: const TextStyle(fontSize: 10, color: Colors.white),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white70),
+                        ],
+                      ),
+                    ),
+                  ),
+                )),
               ],
               const SizedBox(height: 24),
               SizedBox(
