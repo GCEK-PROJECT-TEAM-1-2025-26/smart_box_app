@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/box_service.dart';
 import '../services/route_service.dart';
 import 'package:flutter_compass/flutter_compass.dart';
@@ -102,24 +103,22 @@ class _BoxMapScreenState extends State<BoxMapScreen> {
   }
 
   Future<void> _startNavigation(Map<String, dynamic> box) async {
-    if (_currentPosition == null) return;
-
-    print("NAVIGATION STARTED");
-
-    final route = await RouteService.getRoute(
-      _currentPosition!.latitude,
-      _currentPosition!.longitude,
-      (box['latitude'] as num).toDouble(),
-      (box['longitude'] as num).toDouble(),
+    final lat = (box['latitude'] as num).toDouble();
+    final lng = (box['longitude'] as num).toDouble();
+    
+    final Uri googleMapsUrl = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng',
     );
 
-    print("ROUTE POINTS COUNT: ${route.length}");
-
-    setState(() {
-      _routePoints = route;
-      _selectedBoxId = box['boxId'];
-      _selectedBox = box;
-    });
+    if (await canLaunchUrl(googleMapsUrl)) {
+      await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open Google Maps')),
+        );
+      }
+    }
   }
 
   double _calculateBearing(
