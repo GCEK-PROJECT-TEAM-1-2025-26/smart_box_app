@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import '../services/box_service.dart';
 import '../services/route_service.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'dart:math' as math;
+import 'dart:async';
 
 class BoxMapScreen extends StatefulWidget {
   const BoxMapScreen({super.key});
@@ -15,7 +15,15 @@ class BoxMapScreen extends StatefulWidget {
 }
 
 class _BoxMapScreenState extends State<BoxMapScreen> {
-  final MapController _mapController = MapController();
+  GoogleMapController? _mapController;
+  StreamSubscription? _compassSubscription;
+
+  @override
+  void dispose() {
+    _compassSubscription?.cancel();
+    _mapController?.dispose();
+    super.dispose();
+  }
   Position? _currentPosition;
   List<Map<String, dynamic>> _boxes = [];
   List<LatLng> _routePoints = [];
@@ -31,10 +39,12 @@ class _BoxMapScreenState extends State<BoxMapScreen> {
     _loadBoxes();
     _getCurrentLocation();
 
-    FlutterCompass.events?.listen((event) {
-      setState(() {
-        _heading = event.heading ?? 0;
-      });
+    _compassSubscription = FlutterCompass.events?.listen((event) {
+      if (mounted) {
+        setState(() {
+          _heading = event.heading ?? 0;
+        });
+      }
     });
   }
 
@@ -139,6 +149,54 @@ class _BoxMapScreenState extends State<BoxMapScreen> {
     return (bearing + 360) % 360;
   }
 
+  Set<Marker> _buildMarkers() {
+    final Set<Marker> markers = {};
+    if (_currentPosition != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('current_location'),
+          position: LatLng(
+            _currentPosition!.latitude,
+            _currentPosition!.longitude,
+          ),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+        ),
+      );
+    }
+    for (var box in _boxes) {
+      markers.add(
+        Marker(
+          markerId: MarkerId(box['boxId']),
+          position: LatLng(
+            (box['latitude'] as num).toDouble(),
+            (box['longitude'] as num).toDouble(),
+          ),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            _selectedBoxId == box['boxId']
+                ? BitmapDescriptor.hueRed
+                : BitmapDescriptor.hueGreen,
+          ),
+        ),
+      );
+    }
+    return markers;
+  }
+
+  Set<Polyline> _buildPolylines() {
+    final Set<Polyline> polylines = {};
+    if (_routePoints.isNotEmpty) {
+      polylines.add(
+        Polyline(
+          polylineId: const PolylineId('route'),
+          points: _routePoints,
+          width: 4,
+          color: Colors.blue,
+        ),
+      );
+    }
+    return polylines;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_currentPosition == null) {
@@ -149,68 +207,21 @@ class _BoxMapScreenState extends State<BoxMapScreen> {
       appBar: AppBar(title: const Text('Nearby Smart Boxes')),
       body: Stack(
         children: [
-          FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: LatLng(
+          GoogleMap(
+            initialCameraPosition: CameraPosition(
+              target: LatLng(
                 _currentPosition!.latitude,
                 _currentPosition!.longitude,
               ),
-              initialZoom: 15,
+              zoom: 15,
             ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.example.smart_box_app',
-              ),
-
-              if (_routePoints.isNotEmpty)
-                PolylineLayer(
-                  polylines: [
-                    Polyline(
-                      points: _routePoints,
-                      strokeWidth: 4,
-                      color: Colors.blue,
-                    ),
-                  ],
-                ),
-
-              MarkerLayer(
-                markers: [
-                  Marker(
-                    point: LatLng(
-                      _currentPosition!.latitude,
-                      _currentPosition!.longitude,
-                    ),
-                    width: 40,
-                    height: 40,
-                    child: const Icon(
-                      Icons.person_pin_circle,
-                      color: Colors.blue,
-                      size: 40,
-                    ),
-                  ),
-
-                  ..._boxes.map((box) {
-                    return Marker(
-                      point: LatLng(
-                        (box['latitude'] as num).toDouble(),
-                        (box['longitude'] as num).toDouble(),
-                      ),
-                      width: 40,
-                      height: 40,
-                      child: Icon(
-                        Icons.ev_station,
-                        color: _selectedBoxId == box['boxId']
-                            ? Colors.red
-                            : Colors.green,
-                        size: 40,
-                      ),
-                    );
-                  }),
-                ],
-              ),
-            ],
+            myLocationEnabled: false,
+            zoomControlsEnabled: true,
+            markers: _buildMarkers(),
+            polylines: _buildPolylines(),
+            onMapCreated: (controller) {
+              _mapController = controller;
+            },
           ),
 
           if (_selectedBox != null)
@@ -293,12 +304,14 @@ class _BoxMapScreenState extends State<BoxMapScreen> {
                             ),
                             child: ListTile(
                               onTap: () {
-                                _mapController.move(
-                                  LatLng(
-                                    (box['latitude'] as num).toDouble(),
-                                    (box['longitude'] as num).toDouble(),
+                                _mapController?.animateCamera(
+                                  CameraUpdate.newLatLngZoom(
+                                    LatLng(
+                                      (box['latitude'] as num).toDouble(),
+                                      (box['longitude'] as num).toDouble(),
+                                    ),
+                                    18.0,
                                   ),
-                                  18,
                                 );
                               },
                               leading: const Icon(

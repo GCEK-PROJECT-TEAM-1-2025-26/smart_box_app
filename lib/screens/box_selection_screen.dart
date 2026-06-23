@@ -1,6 +1,5 @@
 import 'box_map_screen.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -494,53 +493,43 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: FlutterMap(
-                          options: MapOptions(
-                            initialCenter: LatLng(
+                        child: GoogleMap(
+                          initialCameraPosition: CameraPosition(
+                            target: LatLng(
                               _currentPosition!.latitude,
                               _currentPosition!.longitude,
                             ),
-                            initialZoom: 14,
+                            zoom: 14,
                           ),
-                          children: [
-                            TileLayer(
-                              urlTemplate:
-                                  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                              userAgentPackageName: 'com.example.smart_box_app',
+                          zoomControlsEnabled: false,
+                          scrollGesturesEnabled: false,
+                          zoomGesturesEnabled: false,
+                          tiltGesturesEnabled: false,
+                          rotateGesturesEnabled: false,
+                          markers: {
+                            Marker(
+                              markerId: const MarkerId('current_location'),
+                              position: LatLng(
+                                _currentPosition!.latitude,
+                                _currentPosition!.longitude,
+                              ),
+                              icon: BitmapDescriptor.defaultMarkerWithHue(
+                                BitmapDescriptor.hueBlue,
+                              ),
                             ),
-                            MarkerLayer(
-                              markers: [
-                                Marker(
-                                  point: LatLng(
-                                    _currentPosition!.latitude,
-                                    _currentPosition!.longitude,
-                                  ),
-                                  width: 40,
-                                  height: 40,
-                                  child: const Icon(
-                                    Icons.person_pin_circle,
-                                    color: Colors.blue,
-                                    size: 40,
-                                  ),
+                            ..._boxes.map((box) {
+                              return Marker(
+                                markerId: MarkerId(box['boxId'] as String),
+                                position: LatLng(
+                                  (box['latitude'] as num).toDouble(),
+                                  (box['longitude'] as num).toDouble(),
                                 ),
-                                ..._boxes.map((box) {
-                                  return Marker(
-                                    point: LatLng(
-                                      (box['latitude'] as num).toDouble(),
-                                      (box['longitude'] as num).toDouble(),
-                                    ),
-                                    width: 40,
-                                    height: 40,
-                                    child: const Icon(
-                                      Icons.ev_station,
-                                      color: Colors.green,
-                                      size: 40,
-                                    ),
-                                  );
-                                }),
-                              ],
-                            ),
-                          ],
+                                icon: BitmapDescriptor.defaultMarkerWithHue(
+                                  BitmapDescriptor.hueGreen,
+                                ),
+                              );
+                            }),
+                          },
                         ),
                       ),
 
