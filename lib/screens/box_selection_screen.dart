@@ -555,22 +555,14 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
                             ),
                             zoom: 14,
                           ),
+                          myLocationEnabled: true,
+                          myLocationButtonEnabled: false,
                           zoomControlsEnabled: false,
                           scrollGesturesEnabled: false,
                           zoomGesturesEnabled: false,
                           tiltGesturesEnabled: false,
                           rotateGesturesEnabled: false,
                           markers: {
-                            Marker(
-                              markerId: const MarkerId('current_location'),
-                              position: LatLng(
-                                _currentPosition!.latitude,
-                                _currentPosition!.longitude,
-                              ),
-                              icon: BitmapDescriptor.defaultMarkerWithHue(
-                                BitmapDescriptor.hueBlue,
-                              ),
-                            ),
                             ..._boxes.map((box) {
                               return Marker(
                                 markerId: MarkerId(box['boxId'] as String),
