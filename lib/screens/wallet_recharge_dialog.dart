@@ -133,6 +133,18 @@ class _WalletRechargeDialogState extends State<WalletRechargeDialog> {
               border: OutlineInputBorder(),
             ),
           ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8.0,
+            children: [100, 200, 500].map((amount) {
+              return ActionChip(
+                label: Text('₹$amount'),
+                onPressed: () {
+                  _amountController.text = amount.toString();
+                },
+              );
+            }).toList(),
+          ),
           if (_isProcessing)
             const Padding(
               padding: EdgeInsets.only(top: 16.0),

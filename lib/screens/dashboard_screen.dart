@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:async';
 import '../theme/app_theme.dart';
 import '../services/auth_service.dart';
@@ -12,6 +13,7 @@ import '../models/command_model.dart';
 import '../widgets/meter_card.dart';
 import 'profile_screen.dart';
 import 'box_selection_screen.dart';
+import 'wallet_recharge_dialog.dart';
 
 class DashboardScreen extends StatefulWidget {
   final String? boxId;
@@ -36,6 +38,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   SessionModel? _activeSession;
   BoxModel? _currentBox;
   Timer? _readingTimer;
+  StreamSubscription? _userSubscription;
 
   // UI state
   bool _isStartingSession = false;
@@ -121,30 +124,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _loadUserData() {
     final user = _authService.currentUser;
     if (user != null) {
-      print('DEBUG: Loading user data for UID: ${user.uid}');
-      _userService.getUserDocumentStream(user.uid).listen((userDoc) {
-        print('DEBUG: User document exists: ${userDoc.exists}');
+      _userSubscription?.cancel();
+      _userSubscription = _userService.getUserDocumentStream(user.uid).listen((userDoc) {
         if (userDoc.exists && mounted) {
           final userData = userDoc.data() as Map<String, dynamic>;
           final walletBalance = (userData['walletBalance'] ?? 500.0).toDouble();
-          print('DEBUG: Wallet balance from DB: $walletBalance');
           setState(() {
             _walletBalance = walletBalance;
           });
-        } else if (!userDoc.exists) {
-          print('DEBUG: User document does not exist, creating one...');
-          _userService
-              .createUserDocument(user, user.displayName ?? 'User')
-              .then((_) {
-                print('DEBUG: User document created successfully');
-              })
-              .catchError((error) {
-                print('DEBUG: Error creating user document: $error');
-              });
         }
       });
-    } else {
-      print('DEBUG: No current user found');
+    }
+  }
+
+  void _openRechargeDialog() async {
+    final result = await showDialog(
+      context: context,
+      builder: (context) => WalletRechargeDialog(
+        razorpayKey: dotenv.env['RAZORPAY_API_KEY'] ?? 'rzp_test_YOUR_API_KEY_HERE', 
+      ),
+    );
+
+    if (result == true) {
+      _loadUserData();
     }
   }
 
@@ -485,34 +487,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
         elevation: 0,
         actions: [
           // Wallet Balance in App Bar (only place where wallet is shown)
-          Container(
-            margin: const EdgeInsets.only(right: AppTheme.spacingMedium),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppTheme.spacingSmall,
-              vertical: AppTheme.spacingXSmall,
-            ),
-            decoration: BoxDecoration(
-              color: AppTheme.success.withValues(alpha: 0.1),
-              border: Border.all(color: AppTheme.success, width: 1),
-              borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.account_balance_wallet,
-                  color: AppTheme.success,
-                  size: 16,
-                ),
-                const SizedBox(width: AppTheme.spacingXSmall),
-                Text(
-                  "₹${_walletBalance.toStringAsFixed(2)}",
-                  style: AppTheme.bodyMedium.copyWith(
+          InkWell(
+            onTap: _openRechargeDialog,
+            borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+            child: Container(
+              margin: const EdgeInsets.only(right: AppTheme.spacingMedium),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.spacingSmall,
+                vertical: AppTheme.spacingXSmall,
+              ),
+              decoration: BoxDecoration(
+                color: AppTheme.success.withValues(alpha: 0.1),
+                border: Border.all(color: AppTheme.success, width: 1),
+                borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.account_balance_wallet,
                     color: AppTheme.success,
-                    fontWeight: FontWeight.w600,
+                    size: 16,
                   ),
-                ),
-              ],
+                  const SizedBox(width: AppTheme.spacingXSmall),
+                  Text(
+                    "₹${_walletBalance.toStringAsFixed(2)}",
+                    style: AppTheme.bodyMedium.copyWith(
+                      color: AppTheme.success,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           _isSigningOut
@@ -855,12 +861,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   width: double.infinity,
                   height: 55,
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      _showSnackBar(
-                        'Wallet recharge feature coming soon!',
-                        AppTheme.primaryBlue,
-                      );
-                    },
+                    onPressed: _openRechargeDialog,
                     icon: const Icon(Icons.add, color: Colors.white),
                     label: Text("Recharge Wallet", style: AppTheme.labelLarge),
                     style: AppTheme.primaryButtonStyle,
