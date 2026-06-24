@@ -326,6 +326,15 @@ class _BoxMapScreenState extends State<BoxMapScreen> {
                                     "${((box['distance'] ?? 0) / 1000).toStringAsFixed(2)} km away",
                                   ),
                                   Text("Status: ${box['status']}"),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "EV: ₹${box['tariff']?['evRate'] ?? 12.0}/kWh",
+                                    style: const TextStyle(fontSize: 12, color: Colors.blueGrey),
+                                  ),
+                                  Text(
+                                    "Socket: ₹${box['tariff']?['socketRate'] ?? 8.0}/kWh",
+                                    style: const TextStyle(fontSize: 12, color: Colors.blueGrey),
+                                  ),
                                 ],
                               ),
                               trailing: ElevatedButton(

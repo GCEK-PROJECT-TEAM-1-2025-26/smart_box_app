@@ -37,6 +37,7 @@ class BoxService {
           'longitude': data['longitude'],
           'location': data['location'] ?? '',
           'status': data['status'] ?? 'available',
+          'tariff': data['tariff'],
         };
       }).where((box) =>
         box['latitude'] != null && box['longitude'] != null
