@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../services/user_service.dart';
 import '../services/auth_service.dart';
 import '../models/user_model.dart';
+import 'wallet_recharge_dialog.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -109,6 +111,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _isEditing = false;
     });
     _loadUserData(); // Reset fields to original values
+  }
+
+  void _openRechargeDialog() async {
+    final result = await showDialog(
+      context: context,
+      builder: (context) => WalletRechargeDialog(
+        razorpayKey: dotenv.env['RAZORPAY_API_KEY'] ?? 'rzp_test_YOUR_API_KEY_HERE', 
+      ),
+    );
+
+    if (result == true) {
+      // Reload profile to show updated balance
+      _loadUserData();
+    }
   }
 
   @override
@@ -379,9 +395,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         Expanded(
                           child: _buildStatCard(
-                            'Wallet Balance',
+                            'Wallet Balance\n(Tap to Recharge)',
                             '₹${_currentUser!.walletBalance.toStringAsFixed(2)}',
                             Icons.account_balance_wallet,
+                            onTap: _openRechargeDialog,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -483,8 +500,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon) {
-    return Card(
+  Widget _buildStatCard(String title, String value, IconData icon, {VoidCallback? onTap}) {
+    Widget card = Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -508,6 +525,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
+
+    if (onTap != null) {
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: card,
+      );
+    }
+    return card;
   }
 
   @override
