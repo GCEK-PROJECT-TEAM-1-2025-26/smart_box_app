@@ -1,3 +1,4 @@
+import 'wallet_recharge_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
@@ -52,14 +53,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   double _walletBalance = 500.0; // Default initial value
 
   // Tariff rates
-  double get evRate => (_currentBox?.tariff['evRate'] as num?)?.toDouble() ?? 12.0;
-  double get socketRate => (_currentBox?.tariff['socketRate'] as num?)?.toDouble() ?? 8.0;
+  double get evRate =>
+      (_currentBox?.tariff['evRate'] as num?)?.toDouble() ?? 12.0;
+  double get socketRate =>
+      (_currentBox?.tariff['socketRate'] as num?)?.toDouble() ?? 8.0;
 
   @override
   void initState() {
     super.initState();
+
     _currentBoxId = widget.boxId ?? 'box_001';
-    print('Dashboard opened for box: $_currentBoxId');
+
     _initializeBoxAndListen();
     _loadUserData();
   }
@@ -79,6 +83,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void dispose() {
     _readingTimer?.cancel();
+
     super.dispose();
   }
 
@@ -855,10 +860,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   width: double.infinity,
                   height: 55,
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      _showSnackBar(
-                        'Wallet recharge feature coming soon!',
-                        AppTheme.primaryBlue,
+                    onPressed: () async {
+                      await showDialog(
+                        context: context,
+                        builder: (context) => const WalletRechargeDialog(
+                          razorpayKey: 'rzp_test_T58nq6GkCWwrPv',
+                        ),
                       );
                     },
                     icon: const Icon(Icons.add, color: Colors.white),
