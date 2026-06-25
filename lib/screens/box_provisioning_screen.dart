@@ -20,9 +20,14 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _boxIdController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
-  final TextEditingController _secretController = TextEditingController(text: 'super-secret-token');
+  final TextEditingController _secretController = TextEditingController();
   final TextEditingController _evRateController = TextEditingController(text: '12.0');
   final TextEditingController _socketRateController = TextEditingController(text: '8.0');
+  
+  final TextEditingController _registrationIdController = TextEditingController();
+  int _currentStep = 1;
+  bool _isVerifyingToken = false;
+  bool _isManualMode = false;
 
   List<String> _scannedSSIDs = [];
   String? _selectedSSID;
@@ -49,6 +54,7 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
     _secretController.dispose();
     _evRateController.dispose();
     _socketRateController.dispose();
+    _registrationIdController.dispose();
     super.dispose();
   }
 
@@ -130,6 +136,43 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
     );
   }
 
+  Future<void> _verifyRegistrationToken() async {
+    final token = _registrationIdController.text.trim();
+    if (token.isEmpty || token.length != 6) {
+      _showSnackBar('Please enter a valid 6-digit Registration ID', AppTheme.error);
+      return;
+    }
+
+    setState(() => _isVerifyingToken = true);
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw Exception('User not logged in');
+
+      final doc = await FirebaseFirestore.instance.collection('provisioningTokens').doc(token).get();
+      if (!doc.exists) {
+        throw Exception('Invalid Registration ID. Please check and try again.');
+      }
+
+      final data = doc.data()!;
+      if (data['ownerId'] != user.uid) {
+        throw Exception('You are not authorized to provision this box. Owner mismatch.');
+      }
+
+      // Valid token! Fill the hidden fields.
+      setState(() {
+        _boxIdController.text = data['boxId'] ?? '';
+        _secretController.text = data['deviceSecret'] ?? '';
+        _currentStep = 2;
+        _isVerifyingToken = false;
+      });
+      
+      _checkConnection(); // Auto-check connection now that we are on step 2
+    } catch (e) {
+      setState(() => _isVerifyingToken = false);
+      _showSnackBar(e.toString().replaceAll('Exception: ', ''), AppTheme.error);
+    }
+  }
+
   Future<void> _submitProvisioning() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -180,25 +223,42 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
           }
         }
 
-        await FirebaseFirestore.instance.collection('boxes').doc(boxId).set({
-          'boxId': boxId,
-          'ownerId': user.uid,
-          'location': location,
-          'latitude': lat ?? 10.0, // fallback coordinates if parsing failed
-          'longitude': lng ?? 76.0,
-          'status': 'available',
-          'tariff': {
-            'evRate': double.tryParse(_evRateController.text) ?? 12.0,
-            'socketRate': double.tryParse(_socketRateController.text) ?? 8.0,
-          },
-          'isLocked': true,
-          'rfidDetected': true,
-          'devices': {
-            'evCharger': {'isOn': false, 'voltage': 0.0, 'current': 0.0, 'power': 0.0},
-            'threePinSocket': {'isOn': false, 'voltage': 0.0, 'current': 0.0, 'power': 0.0},
-          },
-          'lastUpdated': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+        if (_isManualMode) {
+          await FirebaseFirestore.instance.collection('boxes').doc(boxId).set({
+            'boxId': boxId,
+            'ownerId': user.uid,
+            'location': location,
+            'latitude': lat ?? 10.0,
+            'longitude': lng ?? 76.0,
+            'status': 'available',
+            'tariff': {
+              'evRate': double.tryParse(_evRateController.text) ?? 12.0,
+              'socketRate': double.tryParse(_socketRateController.text) ?? 8.0,
+            },
+            'isLocked': true,
+            'rfidDetected': true,
+            'devices': {
+              'evCharger': {'isOn': false, 'voltage': 0.0, 'current': 0.0, 'power': 0.0},
+              'threePinSocket': {'isOn': false, 'voltage': 0.0, 'current': 0.0, 'power': 0.0},
+            },
+            'lastUpdated': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+        } else {
+          await FirebaseFirestore.instance.collection('boxes').doc(boxId).update({
+            'location': location,
+            'latitude': lat ?? 10.0,
+            'longitude': lng ?? 76.0,
+            'status': 'available',
+            'tariff': {
+              'evRate': double.tryParse(_evRateController.text) ?? 12.0,
+              'socketRate': double.tryParse(_socketRateController.text) ?? 8.0,
+            },
+            'lastUpdated': FieldValue.serverTimestamp(),
+          });
+          
+          // 3. Delete the provisioning token so it can't be reused
+          await FirebaseFirestore.instance.collection('provisioningTokens').doc(_registrationIdController.text.trim()).delete();
+        }
       }
 
       setState(() {
@@ -224,7 +284,72 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
         elevation: 0,
       ),
       body: SafeArea(
-        child: _isProvisioned ? _buildSuccessView() : _buildProvisionForm(),
+        child: _isProvisioned 
+            ? _buildSuccessView() 
+            : (_currentStep == 1 ? _buildRegistrationStep() : _buildProvisionForm()),
+      ),
+    );
+  }
+
+  Widget _buildRegistrationStep() {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(AppTheme.spacingLarge),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Icon(Icons.qr_code_scanner, size: 64, color: theme.colorScheme.primary),
+          const SizedBox(height: 24),
+          Text(
+            'Enter Registration ID',
+            style: AppTheme.headingMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Ask your administrator for the 6-digit Registration ID to begin provisioning your assigned Smart Box.',
+            style: AppTheme.bodyMedium.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+          TextFormField(
+            controller: _registrationIdController,
+            keyboardType: TextInputType.number,
+            maxLength: 6,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 32, letterSpacing: 8, fontWeight: FontWeight.bold),
+            decoration: AppTheme.inputDecoration(context, labelText: '').copyWith(
+              counterText: '',
+              hintText: '000000',
+              contentPadding: const EdgeInsets.symmetric(vertical: 20),
+            ),
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            onPressed: _isVerifyingToken ? null : _verifyRegistrationToken,
+            child: _isVerifyingToken 
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : const Text('VERIFY REGISTRATION', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _isManualMode = true;
+                _currentStep = 2;
+                _secretController.text = 'super-secret-token';
+              });
+              _checkConnection();
+            },
+            child: const Text('Manual Setup (Admin Only)', style: TextStyle(color: Colors.grey)),
+          ),
+        ],
       ),
     );
   }
@@ -379,15 +504,17 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
                   ),
                   const SizedBox(height: AppTheme.spacingMedium),
 
-                  // Box ID
+                  // Box ID (Read-only from Token or Editable in Manual Mode)
                   TextFormField(
                     controller: _boxIdController,
+                    readOnly: !_isManualMode,
+                    enabled: _isManualMode,
                     decoration: AppTheme.inputDecoration(
                       context,
-                      labelText: 'Box ID (Unique identifier)',
+                      labelText: _isManualMode ? 'Box ID (Unique identifier)' : 'Box ID (Assigned from Cloud)',
                       prefixIcon: Icons.tag,
                     ),
-                    validator: (value) {
+                    validator: _isManualMode ? (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'Please enter a unique Box ID';
                       }
@@ -395,7 +522,7 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
                         return 'Box ID must not contain spaces';
                       }
                       return null;
-                    },
+                    } : null,
                   ),
                   const SizedBox(height: AppTheme.spacingMedium),
 
@@ -445,17 +572,21 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
                   ),
                   const SizedBox(height: AppTheme.spacingMedium),
 
-                  // Device Secret
-                  TextFormField(
-                    controller: _secretController,
-                    obscureText: true,
-                    decoration: AppTheme.inputDecoration(
-                      context,
-                      labelText: 'Device Secret Token',
-                      prefixIcon: Icons.vpn_key,
+                  if (_isManualMode) ...[
+                    TextFormField(
+                      controller: _secretController,
+                      obscureText: true,
+                      decoration: AppTheme.inputDecoration(
+                        context,
+                        labelText: 'Device Secret Token',
+                        prefixIcon: Icons.vpn_key,
+                      ),
+                      validator: (value) => (value == null || value.isEmpty) ? 'Please enter a secret security token' : null,
                     ),
-                    validator: (value) => (value == null || value.isEmpty) ? 'Please enter a secret security token' : null,
-                  ),
+                    const SizedBox(height: AppTheme.spacingMedium),
+                  ] else ...[
+                    // Device Secret is now handled silently via the Token
+                  ],
                   const SizedBox(height: AppTheme.spacingLarge),
 
                   // Submit Button

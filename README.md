@@ -1,109 +1,65 @@
 # Smart Box App 🔐
 
-A Flutter mobile app for controlling smart boxes with QR code scanning, energy monitoring, and digital wallet payments.
+A comprehensive Flutter mobile application for controlling smart energy boxes. Features QR code scanning, energy monitoring, digital wallet payments, Google Maps navigation, and ESP32 hardware integration.
 
 ## ✨ Features
 
-- **QR Code Scanning** - Scan box QR codes or enter Box ID manually
-- **Multi-Box Support** - Access different smart boxes
-- **Remote Control** - Lock/unlock boxes, control devices (EV charger, 3-pin socket)
-- **Real-time Monitoring** - Energy usage tracking with cost calculation
-- **Digital Wallet** - Prepaid balance system
-- **Live Updates** - Firestore integration for real-time data
-- **User Authentication** - Firebase Auth with email verification
+- **QR Code Scanning** - Scan box QR codes or enter Box ID manually (`mobile_scanner`).
+- **Google Maps Integration** - Locate nearby boxes on a map and navigate directly to them (`google_maps_flutter`).
+- **Remote Control** - Lock/unlock boxes and toggle power to EV Chargers and 3-Pin Sockets.
+- **Real-time Monitoring** - Track live energy usage (Voltage, Current, Power) and cost calculations.
+- **Digital Wallet & Payments** - Recharge digital wallet using Razorpay integration.
+- **Live Updates** - Real-time synchronization using Firebase Firestore Streams.
+- **User Authentication** - Secure login via Firebase Auth with email verification.
 
 ## 🚀 Quick Start
 
-```bash
-cd m:\smart_box_app
-flutter pub get
-flutter run
-```
+1. **Clone & Install**
+   ```bash
+   cd m:\smart_box_app
+   flutter pub get
+   ```
+
+2. **Environment Setup**
+   Create a `.env` file in the root directory and add your Razorpay API Key:
+   ```env
+   RAZORPAY_API_KEY=rzp_test_YOUR_API_KEY_HERE
+   ```
+
+3. **Run App**
+   ```bash
+   flutter run
+   ```
 
 ## 📱 How It Works
 
-1. **Login** - Enter email/password
-2. **Verify Email** - Click verification link
-3. **Select Box** - Scan QR code or enter box ID (e.g., `box_001`)
-4. **Control** - Unlock, start session, toggle devices
-5. **Monitor** - View real-time energy usage and costs
+1. **Authentication**: Register, verify email, and log in.
+2. **Find a Box**: Use the Map screen to locate nearby boxes. Tap "Navigate" to get directions via external Maps.
+3. **Connect**: Scan the QR code on the physical box or enter the ID (e.g., `box_001`).
+4. **Control**: Start a session, unlock the physical lid, and turn on the EV/Socket relays.
+5. **Monitor & Pay**: View real-time energy flow. When the session ends, the cost is automatically deducted from your Wallet Balance. Recharge the wallet using the Razorpay gateway if funds run low.
 
-## 📁 Project Structure
+## 🗄️ Firebase Structure
 
-```
-lib/
-├── main.dart                          # Entry point & auth wrapper
-├── screens/
-│   ├── login_screen.dart
-│   ├── email_verification_screen.dart
-│   ├── box_selection_screen.dart     # ⭐ NEW: QR scanner & manual entry
-│   ├── dashboard_screen.dart          # Main control dashboard
-│   └── profile_screen.dart
-├── services/
-│   ├── auth_service.dart
-│   ├── box_service.dart               # ⭐ Updated with validateBoxId()
-│   ├── command_service.dart
-│   ├── session_service.dart
-│   └── user_service.dart
-├── models/
-├── widgets/
-└── theme/
-    └── app_theme.dart                # Dark theme
-```
+### Firestore Collections
+- **`boxes/`**: Contains box configuration, coordinates (`latitude`, `longitude`), and rates (`tariff.evRate`, `tariff.socketRate`).
+- **`commands/`**: Relay commands sent from the app to the ESP32 (e.g., `{"command": "unlock"}`).
+- **`sessions/`**: Usage tracking logs (kWh consumed, session duration, cost).
+- **`users/`**: Stores user profiles, preferences, and real-time `walletBalance`.
 
-## 🗄️ Firestore Collections
+### Security Note
+For production, ensure Firestore Rules restrict users from manually modifying their own `walletBalance`. Balance updates should be handled securely by Firebase Cloud Functions via Razorpay webhooks.
 
-- **boxes/** - Smart box configurations and status
-- **commands/** - Relay control commands (unlock, device control)
-- **sessions/** - Usage tracking and billing
-- **users/** - User wallet balances and preferences
+## 🔧 Google Maps Setup
+The app uses the Google Maps SDK. Ensure you have restricted your API key in the Google Cloud Console to this app's package name (`com.example.smart_box_app`) and your debug/release SHA-1 fingerprint.
 
-## 📦 Dependencies
-
-```yaml
-firebase_core: ^3.8.0
-firebase_auth: ^5.3.3
-cloud_firestore: ^5.4.4
-qr_code_scanner: ^1.0.1 # ⭐ NEW
-permission_handler: ^12.0.2 # ⭐ NEW
-google_sign_in: ^6.2.1
-```
-
-## ✅ Testing Checklist
-
-- [ ] Login → Email verification → Box Selection
-- [ ] Manual entry: Type `box_001` → Dashboard
-- [ ] QR scan: Scan code → Dashboard
-- [ ] Invalid box: See error
-- [ ] Lock/Unlock works
-- [ ] Device control works
-- [ ] Session tracking works
-- [ ] Back button returns to Box Selection
-- [ ] Multiple boxes work
-- [ ] Logout works
-
-## 🔧 Setup Needed
-
-**Android**: Camera permission already in `AndroidManifest.xml`  
-**iOS**: Camera permission already in `Info.plist`
-
-## 🆘 Troubleshooting
-
-| Issue                  | Solution                              |
-| ---------------------- | ------------------------------------- |
-| Camera not working     | Grant camera permission in Settings   |
-| "Box not found"        | Verify box exists in Firestore        |
-| QR code not scanning   | Ensure good lighting, clear code      |
-| Commands not executing | Check ESP32 backend & Firestore rules |
-
-## 📊 Recent Changes
-
-- ✅ Added QR code scanner screen
-- ✅ Added manual box ID entry
-- ✅ Multi-box support with dynamic box ID
-- ✅ Camera permission handling
-- ✅ Box validation in Firestore
+## 📦 Core Dependencies
+- `firebase_core`, `firebase_auth`, `cloud_firestore`
+- `razorpay_flutter` (Wallet Recharge)
+- `google_maps_flutter`, `geolocator`, `url_launcher` (Maps & Navigation)
+- `mobile_scanner` (QR Code)
+- `flutter_dotenv` (Environment Variables)
 
 ---
 
-**Status**: ✅ Production Ready | **Version**: 1.0.0 | **Updated**: May 30, 2026
+**Status**: ✅ Production Ready | **Version**: 1.1.0
