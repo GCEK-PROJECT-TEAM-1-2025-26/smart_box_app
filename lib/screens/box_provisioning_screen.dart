@@ -86,7 +86,7 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
 
     try {
       final response = await http.get(Uri.parse('http://192.168.4.1/scan')).timeout(
-        const Duration(seconds: 5),
+        const Duration(seconds: 15),
       );
 
       if (response.statusCode == 200 && mounted) {
@@ -241,6 +241,7 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
               'evCharger': {'isOn': false, 'voltage': 0.0, 'current': 0.0, 'power': 0.0},
               'threePinSocket': {'isOn': false, 'voltage': 0.0, 'current': 0.0, 'power': 0.0},
             },
+            'deviceSecret': secret,
             'lastUpdated': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
         } else {
@@ -249,6 +250,7 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
             'latitude': lat ?? 10.0,
             'longitude': lng ?? 76.0,
             'status': 'available',
+            'deviceSecret': secret,
             'tariff': {
               'evRate': double.tryParse(_evRateController.text) ?? 12.0,
               'socketRate': double.tryParse(_socketRateController.text) ?? 8.0,
@@ -293,9 +295,10 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
 
   Widget _buildRegistrationStep() {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.all(AppTheme.spacingLarge),
-      child: Column(
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppTheme.spacingLarge),
+        child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -335,7 +338,10 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
             onPressed: _isVerifyingToken ? null : _verifyRegistrationToken,
             child: _isVerifyingToken 
               ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : const Text('VERIFY REGISTRATION', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              : const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('VERIFY REGISTRATION', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
           ),
           const SizedBox(height: 16),
           TextButton(
@@ -351,7 +357,7 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
           ),
         ],
       ),
-    );
+    ));
   }
 
   Widget _buildProvisionForm() {
@@ -422,10 +428,9 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
           const SizedBox(height: AppTheme.spacingLarge),
 
           // Configuration Form
-          if (_isConnectedToBox)
-            Form(
-              key: _formKey,
-              child: Column(
+          Form(
+            key: _formKey,
+            child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -598,9 +603,12 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
                       onPressed: _isSubmitting ? null : _submitProvisioning,
                       child: _isSubmitting
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text(
-                              'CONFIGURE & PROVISION BOX',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          : const FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                'CONFIGURE & PROVISION BOX',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              ),
                             ),
                     ),
                   ),
@@ -618,9 +626,10 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
     return Padding(
       padding: const EdgeInsets.all(AppTheme.spacingXLarge),
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
             Container(
               padding: const EdgeInsets.all(24),
               decoration: const BoxDecoration(
@@ -681,6 +690,7 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );
