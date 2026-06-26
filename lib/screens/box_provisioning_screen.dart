@@ -246,7 +246,6 @@ class _BoxProvisioningScreenState extends State<BoxProvisioningScreen> {
           }, SetOptions(merge: true));
         } else {
           await FirebaseFirestore.instance.collection('boxes').doc(boxId).update({
-            'location': location,
             'latitude': lat ?? 10.0,
             'longitude': lng ?? 76.0,
             'status': 'available',
