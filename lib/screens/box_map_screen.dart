@@ -3,10 +3,12 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/box_service.dart';
+import '../services/booking_service.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'dart:math' as math;
 import 'dart:async';
 import '../theme/app_theme.dart';
+import 'booking_screen.dart';
 
 class BoxMapScreen extends StatefulWidget {
   const BoxMapScreen({super.key});
@@ -65,6 +67,12 @@ class _BoxMapScreenState extends State<BoxMapScreen> {
       });
 
       _calculateDistances();
+
+      // Run lockout check for each box in parallel
+      final bookingService = BookingService();
+      for (final box in boxes) {
+        bookingService.checkAndApplyLockout(box['boxId'] as String);
+      }
     }
   }
 
@@ -210,6 +218,17 @@ class _BoxMapScreenState extends State<BoxMapScreen> {
       );
     }
     for (var box in _boxes) {
+      final status = box['status'] as String? ?? 'available';
+      double hue;
+      if (_selectedBoxId == box['boxId']) {
+        hue = BitmapDescriptor.hueRed;
+      } else if (status == 'booked') {
+        hue = BitmapDescriptor.hueOrange; // reserved
+      } else if (status == 'in_use') {
+        hue = BitmapDescriptor.hueViolet; // in use
+      } else {
+        hue = BitmapDescriptor.hueGreen; // available
+      }
       markers.add(
         Marker(
           markerId: MarkerId(box['boxId']),
@@ -217,11 +236,7 @@ class _BoxMapScreenState extends State<BoxMapScreen> {
             (box['latitude'] as num).toDouble(),
             (box['longitude'] as num).toDouble(),
           ),
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            _selectedBoxId == box['boxId']
-                ? BitmapDescriptor.hueRed
-                : BitmapDescriptor.hueGreen,
-          ),
+          icon: BitmapDescriptor.defaultMarkerWithHue(hue),
           onTap: () {
             _selectBox(box);
           },
@@ -468,7 +483,38 @@ class _BoxMapScreenState extends State<BoxMapScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
+                  // Book Now button (only for available boxes)
+                  if ((box['status'] ?? 'available') == 'available')
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => BookingScreen(
+                                boxId: box['boxId'],
+                                boxLocation: box['location'] ?? '',
+                                tariff: box['tariff'] as Map<String, dynamic>? ??
+                                    {'evRate': 12.0, 'socketRate': 8.0},
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.bookmark_add,
+                            color: AppTheme.warning),
+                        label: const Text("Book",
+                            style: TextStyle(color: AppTheme.warning)),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          side: const BorderSide(color: AppTheme.warning),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {

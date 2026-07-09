@@ -3,8 +3,10 @@ import 'dart:async';
 import '../theme/app_theme.dart';
 import '../services/box_service.dart';
 import '../services/session_service.dart';
+import '../services/booking_service.dart';
 import '../models/box_model.dart';
 import '../models/session_model.dart';
+import '../models/booking_model.dart';
 import 'box_selection_screen.dart';
 
 class OwnerDashboardScreen extends StatefulWidget {
@@ -19,9 +21,11 @@ class OwnerDashboardScreen extends StatefulWidget {
 class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
   final BoxService _boxService = BoxService();
   final SessionService _sessionService = SessionService();
+  final BookingService _bookingService = BookingService();
 
   BoxModel? _currentBox;
   SessionModel? _activeSession;
+  BookingModel? _activeBooking;
   double _totalRevenue = 0.0;
   List<SessionModel> _recentSessions = [];
 
@@ -29,6 +33,7 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
   bool _isLockingToggle = false;
   bool _isEvToggle = false;
   bool _isP3Toggle = false;
+  bool _isReleasingBooking = false;
 
   @override
   void initState() {
@@ -39,29 +44,17 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
   void _listenToBoxAndRevenue() {
     // 1. Listen to box status
     _boxService.getBoxStatus(widget.boxId).listen((box) {
-      if (mounted) {
-        setState(() {
-          _currentBox = box;
-        });
-      }
+      if (mounted) setState(() => _currentBox = box);
     });
 
     // 2. Listen to active session on this box
     _sessionService.getActiveSessionForBox(widget.boxId).listen((session) {
-      if (mounted) {
-        setState(() {
-          _activeSession = session;
-        });
-      }
+      if (mounted) setState(() => _activeSession = session);
     });
 
     // 3. Listen to box total revenue
     _sessionService.getBoxTotalRevenue(widget.boxId).listen((revenue) {
-      if (mounted) {
-        setState(() {
-          _totalRevenue = revenue;
-        });
-      }
+      if (mounted) setState(() => _totalRevenue = revenue);
     });
 
     // 4. Listen to recent sessions
@@ -72,6 +65,25 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
         });
       }
     });
+
+    // 5. Listen to active booking
+    _bookingService.getActiveBookingForBox(widget.boxId).listen((booking) {
+      if (mounted) setState(() => _activeBooking = booking);
+    });
+  }
+
+  Future<void> _forceReleaseBooking() async {
+    if (_activeBooking == null) return;
+    setState(() => _isReleasingBooking = true);
+    try {
+      await _bookingService.cancelBooking(
+          _activeBooking!.bookingId, widget.boxId);
+      _showSnackBar('Booking released successfully.', AppTheme.success);
+    } catch (e) {
+      _showSnackBar('Failed to release booking: $e', AppTheme.error);
+    } finally {
+      if (mounted) setState(() => _isReleasingBooking = false);
+    }
   }
 
   Future<void> _forceStopSession() async {
@@ -176,6 +188,9 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
       ),
     );
   }
+
+  String _fmt(DateTime dt) =>
+      '${dt.day}/${dt.month} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
   Future<void> _showEditTariffDialog() async {
     if (_currentBox == null) return;
@@ -442,6 +457,108 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                       ),
                     ),
                     const SizedBox(height: AppTheme.spacingLarge),
+
+                    // Active Booking Card (shown above active session)
+                    if (_activeBooking != null) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(AppTheme.spacingMedium),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryBlue.withValues(alpha: 0.05),
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.radiusMedium),
+                          border:
+                              Border.all(color: AppTheme.primaryBlue, width: 1.5),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.bookmark,
+                                    color: AppTheme.primaryBlue, size: 22),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'UPCOMING BOOKING',
+                                  style: AppTheme.bodyLarge.copyWith(
+                                    color: AppTheme.primaryBlue,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'User: ${_activeBooking!.userName}',
+                              style: AppTheme.bodyMedium
+                                  .copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              'Device: ${_activeBooking!.deviceType == 'evCharger' ? 'EV Charger' : '3-Pin Socket'}',
+                              style: AppTheme.bodySmall,
+                            ),
+                            Text(
+                              'Charging at: ${_fmt(_activeBooking!.scheduledChargingTime)}',
+                              style: AppTheme.bodySmall,
+                            ),
+                            Text(
+                              'Locks at: ${_fmt(_activeBooking!.lockStartTime)}',
+                              style: AppTheme.bodySmall,
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 6, horizontal: 10),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryBlue
+                                    .withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(
+                                    AppTheme.radiusSmall),
+                              ),
+                              child: Text(
+                                _activeBooking!.isLockActive
+                                    ? '🔒 Box is locked · Expires at ${_fmt(_activeBooking!.expiresAt)}'
+                                    : '⏳ ${_activeBooking!.lockCountdown}',
+                                style: const TextStyle(
+                                    color: AppTheme.primaryBlue,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: _isReleasingBooking
+                                    ? null
+                                    : _forceReleaseBooking,
+                                icon: _isReleasingBooking
+                                    ? const SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2),
+                                      )
+                                    : const Icon(Icons.bookmark_remove,
+                                        size: 16),
+                                label: const Text('Release Booking'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppTheme.error,
+                                  side: const BorderSide(
+                                      color: AppTheme.error),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                        AppTheme.radiusSmall),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppTheme.spacingLarge),
+                    ],
 
                     // Active User Session Card
                     if (_activeSession != null) ...[

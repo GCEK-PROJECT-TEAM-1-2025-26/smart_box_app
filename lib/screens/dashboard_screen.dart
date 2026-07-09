@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:async';
 import '../theme/app_theme.dart';
@@ -33,6 +34,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final SessionService _sessionService = SessionService();
   final AuthService _authService = AuthService();
   final UserService _userService = UserService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Session and Box state
   SessionModel? _activeSession;
@@ -58,13 +60,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
   double get evRate => (_currentBox?.tariff['evRate'] as num?)?.toDouble() ?? 12.0;
   double get socketRate => (_currentBox?.tariff['socketRate'] as num?)?.toDouble() ?? 8.0;
 
+  // State for session ownership check
+  bool _checkingOwnership = true;
+  bool _blockedByOtherUser = false;
+
   @override
   void initState() {
     super.initState();
     _currentBoxId = widget.boxId ?? 'box_001';
     print('Dashboard opened for box: $_currentBoxId');
-    _initializeBoxAndListen();
+    _checkOwnershipThenInit();
     _loadUserData();
+  }
+
+  /// Loophole fix: verify no other user currently controls this box.
+  Future<void> _checkOwnershipThenInit() async {
+    try {
+      final user = _authService.currentUser;
+      final snap = await _firestore
+          .collection('boxes')
+          .doc(_currentBoxId)
+          .get();
+      final controllingUser =
+          snap.data()?['currentSessionUserId'] as String?;
+      if (controllingUser != null &&
+          controllingUser != user?.uid) {
+        if (mounted) setState(() {
+          _checkingOwnership = false;
+          _blockedByOtherUser = true;
+        });
+        return;
+      }
+    } catch (_) {}
+    if (mounted) {
+      setState(() => _checkingOwnership = false);
+      _initializeBoxAndListen();
+    }
   }
 
   // Initialize box and then start listening to streams
@@ -307,7 +338,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (_activeSession != null) {
         final totalCost = _currentEvCost + _currentSocketCost;
 
-        await _sessionService.endSession(_activeSession!.sessionId, totalCost);
+        await _sessionService.endSession(
+            _activeSession!.sessionId, totalCost,
+            boxId: _currentBoxId);
         await _boxService.updateBoxStatus('available', _currentBoxId);
 
         await _toggleDevice('evCharger', false);
@@ -460,6 +493,73 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: const Center(
           child: CircularProgressIndicator(color: AppTheme.primaryBlue),
+        ),
+      );
+    }
+
+    // Show loading while ownership is being checked
+    if (_checkingOwnership) {
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: const Center(
+          child: CircularProgressIndicator(color: AppTheme.primaryBlue),
+        ),
+      );
+    }
+
+    // Blocked: another user is actively controlling this box
+    if (_blockedByOtherUser) {
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => const BoxSelectionScreen()),
+            ),
+          ),
+          title: const Text('Access Denied'),
+          backgroundColor: Theme.of(context).colorScheme.surface,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.lock_person,
+                    size: 80, color: AppTheme.error),
+                const SizedBox(height: 24),
+                Text(
+                  'Box In Use',
+                  style: AppTheme.headingMedium
+                      .copyWith(color: AppTheme.error),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'This box is currently being controlled by another user. Please wait until their session ends.',
+                  style: AppTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton.icon(
+                  onPressed: () => Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const BoxSelectionScreen()),
+                  ),
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Go Back'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryBlue,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       );
     }

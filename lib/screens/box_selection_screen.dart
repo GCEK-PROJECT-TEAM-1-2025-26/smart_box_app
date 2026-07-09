@@ -6,6 +6,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/box_service.dart';
+import '../services/booking_service.dart';
 import '../models/box_model.dart';
 import '../theme/app_theme.dart';
 import 'dashboard_screen.dart';
@@ -13,6 +14,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'owner_dashboard_screen.dart';
 import 'profile_screen.dart';
 import 'box_provisioning_screen.dart';
+import 'my_bookings_screen.dart';
 
 
 class BoxSelectionScreen extends StatefulWidget {
@@ -90,19 +92,59 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
     setState(() => _isLoading = true);
 
     try {
+      final user = FirebaseAuth.instance.currentUser;
       final boxService = BoxService();
-      final accessResult = await boxService.checkBoxAccessibility(boxId);
+      final bookingService = BookingService();
+
+      // Run lockout check so expired bookings are cleaned up
+      await bookingService.checkAndApplyLockout(boxId);
+
+      final accessResult = await boxService.checkBoxAccessibility(
+        boxId,
+        currentUserId: user?.uid,
+      );
 
       if (!mounted) return;
 
       switch (accessResult) {
         case 'ok':
-          // Box is locked and has no active session — allow access
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (context) => DashboardScreen(boxId: boxId),
             ),
           );
+          break;
+
+        case 'booked_by_me':
+          // User owns the booking — allow through and fulfill it
+          if (user != null) {
+            final booking = await bookingService.getMyActiveBookingForBox(
+                boxId, user.uid);
+            if (booking != null) {
+              await bookingService.fulfillBooking(
+                  booking.bookingId, boxId);
+            }
+          }
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => DashboardScreen(boxId: boxId),
+            ),
+          );
+          break;
+
+        case 'booked':
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'This box is reserved by another user. '
+                'Please choose a different box or wait.',
+              ),
+              backgroundColor: AppTheme.warning,
+              duration: Duration(seconds: 4),
+            ),
+          );
+          setState(() => _scannedBoxId = null);
+          if (_isScanning) mobileScannerController?.start();
           break;
 
         case 'not_found':
@@ -231,6 +273,18 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
         elevation: 0,
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.bookmark),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MyBookingsScreen(),
+                ),
+              );
+            },
+            tooltip: 'My Bookings',
+          ),
           IconButton(
             icon: const Icon(Icons.wifi_protected_setup),
             onPressed: () {

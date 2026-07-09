@@ -12,6 +12,13 @@ class BoxModel {
   final String? ownerId;
   final Map<String, dynamic> tariff;
 
+  /// ID of the currently active booking (if any). Set when booking is created.
+  final String? currentBookingId;
+
+  /// UID of the user who currently has dashboard control (session loophole fix).
+  /// Cleared when the session ends or is force-stopped.
+  final String? currentSessionUserId;
+
   BoxModel({
     required this.boxId,
     required this.location,
@@ -23,6 +30,8 @@ class BoxModel {
     required this.status,
     required this.tariff,
     this.ownerId,
+    this.currentBookingId,
+    this.currentSessionUserId,
   });
 
   factory BoxModel.fromFirestore(Map<String, dynamic> data) {
@@ -40,6 +49,8 @@ class BoxModel {
       status: data['status'] ?? 'available',
       ownerId: data['ownerId'],
       tariff: data['tariff'] ?? {'evRate': 12.0, 'socketRate': 8.0},
+      currentBookingId: data['currentBookingId'],
+      currentSessionUserId: data['currentSessionUserId'],
     );
   }
 
@@ -74,6 +85,8 @@ class BoxModel {
     String? status,
     String? ownerId,
     Map<String, dynamic>? tariff,
+    String? currentBookingId,
+    String? currentSessionUserId,
   }) {
     return BoxModel(
       boxId: boxId ?? this.boxId,
@@ -86,6 +99,8 @@ class BoxModel {
       status: status ?? this.status,
       ownerId: ownerId ?? this.ownerId,
       tariff: tariff ?? this.tariff,
+      currentBookingId: currentBookingId ?? this.currentBookingId,
+      currentSessionUserId: currentSessionUserId ?? this.currentSessionUserId,
     );
   }
 }

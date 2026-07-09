@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/session_model.dart';
+import 'box_service.dart';
 
 class SessionService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -9,6 +10,9 @@ class SessionService {
   // Create new session
   Future<String> startSession(String userId, String boxId) async {
     try {
+      // Claim exclusive dashboard control (loophole fix)
+      await BoxService().claimSessionControl(boxId, userId);
+
       final session = SessionModel(
         sessionId: '',
         userId: userId,
@@ -69,7 +73,8 @@ class SessionService {
   }
 
   // End session
-  Future<void> endSession(String sessionId, double totalCost) async {
+  Future<void> endSession(String sessionId, double totalCost,
+      {String? boxId}) async {
     try {
       await _firestore.collection(_sessionsCollection).doc(sessionId).update({
         'endTime': Timestamp.now(),
@@ -77,6 +82,10 @@ class SessionService {
         'totalCost': totalCost,
         'status': 'completed',
       });
+      // Release exclusive dashboard control
+      if (boxId != null) {
+        await BoxService().releaseSessionControl(boxId);
+      }
     } catch (e) {
       throw Exception('Failed to end session: $e');
     }
@@ -226,13 +235,14 @@ class SessionService {
         'status': 'force_stopped',
       });
 
-      // 2. Reset box states (available, locked, relays OFF)
+      // 2. Reset box states (available, locked, relays OFF) + release control
       final boxRef = _firestore.collection('boxes').doc(boxId);
       batch.update(boxRef, {
         'status': 'available',
         'isLocked': true,
         'devices.evCharger.isOn': false,
         'devices.threePinSocket.isOn': false,
+        'currentSessionUserId': FieldValue.delete(),
         'lastUpdated': FieldValue.serverTimestamp(),
       });
 

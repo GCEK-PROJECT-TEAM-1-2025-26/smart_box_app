@@ -49,13 +49,16 @@ class BoxService {
   }
 
   /// Check if a box can be accessed by a user.
-  /// Returns 'ok' if accessible, or a reason string if not.
-  ///
-  /// Access is ONLY allowed when:
-  ///   - Box exists
-  ///   - isLocked == true  (physically secured)
-  ///   - status != 'in_use' (no active session)
-  Future<String> checkBoxAccessibility(String boxId) async {
+  /// Returns:
+  ///   'ok'           — available and accessible
+  ///   'booked_by_me' — reserved by this user (allow through)
+  ///   'booked'       — reserved by someone else (block)
+  ///   'in_use'       — active session in progress
+  ///   'unlocked'     — box is physically open
+  ///   'not_found'    — box ID doesn't exist
+  ///   'error'        — Firestore error
+  Future<String> checkBoxAccessibility(String boxId,
+      {String? currentUserId}) async {
     try {
       final boxDoc = await _firestore
           .collection(_boxCollection)
@@ -69,7 +72,23 @@ class BoxService {
       final status = data['status'] as String? ?? 'available';
 
       if (!isLocked) return 'unlocked';        // Box is physically open
-      if (status == 'in_use') return 'in_use'; // Someone has an active session
+      if (status == 'in_use') return 'in_use'; // Active session running
+
+      if (status == 'booked') {
+        // Check if the booking belongs to the current user
+        final bookingId = data['currentBookingId'] as String?;
+        if (bookingId != null && currentUserId != null) {
+          final bookingDoc = await _firestore
+              .collection('bookings')
+              .doc(bookingId)
+              .get();
+          if (bookingDoc.exists) {
+            final bookingUserId = bookingDoc.data()?['userId'] as String?;
+            if (bookingUserId == currentUserId) return 'booked_by_me';
+          }
+        }
+        return 'booked'; // Reserved by someone else
+      }
 
       return 'ok';
     } catch (e) {
@@ -332,6 +351,38 @@ class BoxService {
       return box != null && box.rfidDetected && box.isLocked;
     } catch (e) {
       return false;
+    }
+  }
+
+  // ─── Session ownership control (loophole fix) ────────────────────────────
+
+  /// Atomically claim dashboard control for [userId] on [boxId].
+  /// Throws if another user already has control.
+  Future<void> claimSessionControl(String boxId, String userId) async {
+    final boxRef = _firestore.collection(_boxCollection).doc(boxId);
+    await _firestore.runTransaction((transaction) async {
+      final snap = await transaction.get(boxRef);
+      if (!snap.exists) throw Exception('Box not found');
+      final existingOwner = snap.data()?['currentSessionUserId'] as String?;
+      if (existingOwner != null && existingOwner != userId) {
+        throw Exception('Box is already being controlled by another user.');
+      }
+      transaction.update(boxRef, {
+        'currentSessionUserId': userId,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
+    });
+  }
+
+  /// Releases dashboard control on [boxId] (called on session end / force stop).
+  Future<void> releaseSessionControl(String boxId) async {
+    try {
+      await _firestore.collection(_boxCollection).doc(boxId).update({
+        'currentSessionUserId': FieldValue.delete(),
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('releaseSessionControl error: $e');
     }
   }
 }
