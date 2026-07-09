@@ -583,13 +583,16 @@ class _BoxSelectionScreenState extends State<BoxSelectionScreen> {
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            onTap: () {
-                              Navigator.push(
+                            onTap: () async {
+                              final selectedBoxId = await Navigator.push<String>(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => const BoxMapScreen(),
                                 ),
                               );
+                              if (selectedBoxId != null && mounted) {
+                                _validateAndAccessBox(selectedBoxId);
+                              }
                             },
                           ),
                         ),
